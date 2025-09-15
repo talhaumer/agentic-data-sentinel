@@ -1,8 +1,41 @@
-# agentic-data-sentinel
-Data Sentinel is an agentic AI platform that autonomously ensures data quality, anomaly detection, and insight generation across modern data warehouses.
-# Data Sentinel — Agentic AI for Data Quality & Analytics
+# 🛡️ Data Sentinel - Agentic AI Data Quality Platform
 
-**🚀 One-liner:** Data Sentinel is an agentic AI system that monitors a data warehouse, detects data quality issues and anomalies, explains root causes with LLMs, and either suggests or executes remediation via an orchestrated agent workflow (LangGraph / LangChain + MCP). It’s built as a cross-cutting Data Engineering + Data Science capstone using FastAPI, Streamlit, a database + data warehouse, and LLMs.
+Data Sentinel is an agentic AI platform that autonomously ensures data quality, anomaly detection, and insight generation across modern data warehouses. It uses LangGraph for orchestration, LLMs for explanations, and provides a comprehensive dashboard for monitoring and management.
+
+## 🚀 Quick Start
+
+### Prerequisites
+
+- Python 3.10+
+- Docker & Docker Compose
+- OpenAI API key (or other LLM provider)
+
+### 1. Clone and Setup
+
+```bash
+git clone <repository-url>
+cd agentic-data-sentinel
+cp env.example .env
+# Edit .env with your configuration
+```
+
+### 2. Start Services
+
+```bash
+# Using Make (recommended)
+make quickstart
+
+# Or manually
+docker-compose up -d
+python scripts/generate_sample_data.py
+```
+
+### 3. Access the Platform
+
+- **API**: http://localhost:8000
+- **Dashboard**: http://localhost:8501
+- **Prometheus**: http://localhost:9090
+- **Grafana**: http://localhost:3000 (admin/admin)
 
 ---
 
