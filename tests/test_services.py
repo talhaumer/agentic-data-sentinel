@@ -2,7 +2,6 @@
 
 import pytest
 import pandas as pd
-import numpy as np
 from unittest.mock import Mock, patch
 
 from app.services.validation_service import ValidationService
@@ -89,7 +88,10 @@ class TestLLMService:
             mock_llm.return_value.agenerate.return_value.generations = [
                 [
                     Mock(
-                        text='{"explanation": "Test explanation", "confidence": 0.8, "action_type": "notify_owner"}'
+                        text=(
+                            '{"explanation": "Test explanation", '
+                            '"confidence": 0.8, "action_type": "notify_owner"}'
+                        )
                     )
                 ]
             ]
@@ -118,7 +120,8 @@ class TestLLMService:
 
         # Test valid JSON response
         response_text = (
-            '{"explanation": "Test", "confidence": 0.9, "action_type": "auto_fix"}'
+            '{"explanation": "Test", "confidence": 0.9, '
+            '"action_type": "auto_fix"}'
         )
         result = service._parse_llm_response(response_text)
 
