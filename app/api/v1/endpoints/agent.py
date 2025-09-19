@@ -40,29 +40,35 @@ async def trigger_workflow(
 
         # Run agent workflow synchronously
         agent_service = SimpleAgentService()
-        try:
-            result = await agent_service.run_workflow(
-                run.id, request.include_llm_explanation
-            )
-            run.status = "completed"
-            run.summary = result.get("summary", {})
-            db.commit()
-        except Exception as e:
-            run.status = "failed"
-            run.summary = {"error": str(e)}
-            db.commit()
-            raise HTTPException(status_code=500, detail=f"Workflow failed: {str(e)}")
+        result = await agent_service.run_workflow(
+            request.dataset_id, request.include_llm_explanation
+        )
+        
+        # Update run with results
+        run.status = result.get("status", "completed")
+        run.summary = result.get("summary", {})
+        run.duration_seconds = result.get("duration_seconds")
+        db.commit()
 
         logger.info(
             "Agent workflow triggered", run_id=run.id, dataset_id=request.dataset_id
         )
 
-        return AgentWorkflowResponse(
-            run_id=run.id,
-            status="completed",
-            message="Workflow completed successfully",
-            estimated_duration=0,  # Completed immediately
-        )
+        # Return appropriate response based on result
+        if result.get("status") == "completed":
+            return AgentWorkflowResponse(
+                run_id=result.get("run_id", run.id),
+                status="completed",
+                message="Workflow completed successfully",
+                estimated_duration=result.get("duration_seconds", 0),
+            )
+        else:
+            # Handle failed workflow
+            error_msg = result.get("summary", {}).get("error", "Unknown error")
+            raise HTTPException(
+                status_code=500, 
+                detail=f"Workflow failed: {error_msg}"
+            )
 
     except HTTPException:
         raise
