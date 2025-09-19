@@ -103,7 +103,7 @@ class AnomalyBase(BaseSchema):
     suggested_sql: Optional[str] = None
     llm_explanation: Optional[str] = None
     action_taken: Optional[str] = Field(None, max_length=100)
-    status: str = Field("open", pattern="^(open|investigating|resolved|ignored)$")
+    status: str = Field("open", pattern="^(open|investigating|resolved|ignored|pending_approval)$")
     extra: Optional[Dict[str, Any]] = None
 
 
@@ -117,7 +117,7 @@ class AnomalyUpdate(BaseSchema):
     """Schema for updating an anomaly."""
 
     status: Optional[str] = Field(
-        None, pattern="^(open|investigating|resolved|ignored)$"
+        None, pattern="^(open|investigating|resolved|ignored|pending_approval)$"
     )
     action_taken: Optional[str] = Field(None, max_length=100)
     llm_explanation: Optional[str] = None
@@ -174,7 +174,7 @@ class ActionLogBase(BaseSchema):
     anomaly_id: Optional[int] = None
     action_type: str = Field(..., max_length=100)
     action_details: Optional[Dict[str, Any]] = None
-    status: str = Field(..., pattern="^(success|failed|pending)$")
+    status: str = Field(..., pattern="^(success|failed|pending|approved|rejected)$")
 
 
 class ActionLogCreate(ActionLogBase):
