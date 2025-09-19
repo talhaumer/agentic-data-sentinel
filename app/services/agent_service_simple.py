@@ -27,6 +27,7 @@ class SimpleAgentService:
     async def run_workflow(self, dataset_id: int, include_llm_explanation: bool = True) -> Dict[str, Any]:
         """Run the complete agent workflow for a dataset synchronously."""
         db = SessionLocal()
+        run = None  # Initialize run variable
         try:
             # Get dataset
             dataset = db.query(Dataset).filter(Dataset.id == dataset_id).first()
@@ -89,6 +90,19 @@ class SimpleAgentService:
                 run.status = "failed"
                 run.summary = {"error": str(e)}
                 db.commit()
+            else:
+                # If run was never created, create a failed run record
+                try:
+                    failed_run = Run(
+                        dataset_id=dataset_id,
+                        status="failed",
+                        run_time=datetime.utcnow(),
+                        summary={"error": str(e)}
+                    )
+                    db.add(failed_run)
+                    db.commit()
+                except Exception as db_error:
+                    logger.error("Failed to create failed run record", error=str(db_error))
             raise
         finally:
             db.close()
