@@ -32,32 +32,22 @@ async def trigger_workflow(
         if not dataset:
             raise HTTPException(status_code=404, detail="Dataset not found")
 
-        # Create a new run
-        run = Run(dataset_id=request.dataset_id, status="pending")
-        db.add(run)
-        db.commit()
-        db.refresh(run)
-
-        # Run agent workflow synchronously
+        # Run agent workflow synchronously (service will create its own run record)
         agent_service = SimpleAgentService()
         result = await agent_service.run_workflow(
             request.dataset_id, request.include_llm_explanation
         )
-        
-        # Update run with results
-        run.status = result.get("status", "completed")
-        run.summary = result.get("summary", {})
-        run.duration_seconds = result.get("duration_seconds")
-        db.commit()
 
         logger.info(
-            "Agent workflow triggered", run_id=run.id, dataset_id=request.dataset_id
+            "Agent workflow triggered", 
+            run_id=result.get("run_id"), 
+            dataset_id=request.dataset_id
         )
 
         # Return appropriate response based on result
         if result.get("status") == "completed":
             return AgentWorkflowResponse(
-                run_id=result.get("run_id", run.id),
+                run_id=result.get("run_id"),
                 status="completed",
                 message="Workflow completed successfully",
                 estimated_duration=result.get("duration_seconds", 0),
