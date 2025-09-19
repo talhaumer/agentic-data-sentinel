@@ -184,7 +184,7 @@ def main():
     
     page = st.sidebar.selectbox(
         "Choose a page",
-        ["📊 Overview", "📁 Datasets", "🚨 Anomalies", "🔄 Runs", "🤖 Agent Workflows", "⚙️ Settings"],
+        ["📊 Overview", "📁 Datasets", "🚨 Anomalies", "🔄 Runs", "🤖 Agent Workflows", "👥 Pending Approvals", "⚙️ Settings"],
     )
 
     # Add system status in sidebar
@@ -210,6 +210,8 @@ def main():
         show_runs()
     elif "Agent Workflows" in page:
         show_agent_workflows()
+    elif "Pending Approvals" in page:
+        show_pending_approvals()
     elif "Settings" in page:
         show_settings()
 
@@ -932,6 +934,170 @@ def show_agent_workflows():
             
         else:
             st.info("No runs available for analytics.")
+
+
+def show_pending_approvals():
+    """Show pending approvals page for human-in-the-loop."""
+    st.header("👥 Pending Approvals")
+    st.markdown("Review and approve actions suggested by the AI agent.")
+    
+    # Add refresh button
+    col1, col2 = st.columns([3, 1])
+    with col1:
+        st.markdown("### Human-in-the-Loop Approval Queue")
+    with col2:
+        if st.button("🔄 Refresh", use_container_width=True):
+            st.cache_data.clear()
+            st.rerun()
+    
+    # Get pending approvals
+    try:
+        approvals_data = fetch_data("agent/pending-approvals")
+        pending_approvals = approvals_data.get("pending_approvals", [])
+        
+        if not pending_approvals:
+            st.success("🎉 No pending approvals! All anomalies have been processed.")
+            return
+        
+        # Display summary metrics
+        col1, col2, col3, col4 = st.columns(4)
+        with col1:
+            st.metric("Total Pending", len(pending_approvals))
+        with col2:
+            high_priority = len([a for a in pending_approvals if a.get("priority") == "high"])
+            st.metric("High Priority", high_priority)
+        with col3:
+            medium_priority = len([a for a in pending_approvals if a.get("priority") == "medium"])
+            st.metric("Medium Priority", medium_priority)
+        with col4:
+            low_priority = len([a for a in pending_approvals if a.get("priority") == "low"])
+            st.metric("Low Priority", low_priority)
+        
+        # Filter options
+        st.subheader("🔍 Filters")
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            priority_filter = st.selectbox("Priority Filter", ["All", "high", "medium", "low"])
+        with col2:
+            action_filter = st.selectbox("Action Filter", ["All", "create_issue", "notify_owner", "auto_fix"])
+        with col3:
+            severity_filter = st.selectbox("Min Severity", ["All", "1", "2", "3", "4", "5"])
+        
+        # Apply filters
+        filtered_approvals = pending_approvals.copy()
+        if priority_filter != "All":
+            filtered_approvals = [a for a in filtered_approvals if a.get("priority") == priority_filter]
+        if action_filter != "All":
+            filtered_approvals = [a for a in filtered_approvals if a.get("suggested_action") == action_filter]
+        if severity_filter != "All":
+            min_severity = int(severity_filter)
+            filtered_approvals = [a for a in filtered_approvals if a.get("severity", 0) >= min_severity]
+        
+        st.markdown(f"**Showing {len(filtered_approvals)} of {len(pending_approvals)} pending approvals**")
+        
+        # Display each approval
+        for i, approval in enumerate(filtered_approvals):
+            anomaly_id = approval.get("anomaly_id")
+            severity = approval.get("severity", 1)
+            priority = approval.get("priority", "low")
+            suggested_action = approval.get("suggested_action", "unknown")
+            
+            # Priority and severity indicators
+            priority_emoji = "🔴" if priority == "high" else "🟡" if priority == "medium" else "🟢"
+            severity_emoji = "🔴" if severity >= 4 else "🟡" if severity >= 3 else "🟢"
+            
+            # Action emoji
+            action_emoji = {
+                "create_issue": "📝",
+                "notify_owner": "📢", 
+                "auto_fix": "🔧",
+                "no_action": "⏸️"
+            }.get(suggested_action, "❓")
+            
+            with st.expander(
+                f"{priority_emoji} {action_emoji} {approval.get('issue_type', 'Unknown')} - {approval.get('table_name', 'Unknown')}",
+                expanded=i < 3  # Expand first 3 by default
+            ):
+                col1, col2 = st.columns(2)
+                
+                with col1:
+                    st.write(f"**Dataset ID:** {approval.get('dataset_id')}")
+                    st.write(f"**Table:** {approval.get('table_name', 'Unknown')}")
+                    st.write(f"**Column:** {approval.get('column_name', 'N/A')}")
+                    st.write(f"**Issue Type:** {approval.get('issue_type', 'Unknown')}")
+                    st.write(f"**Severity:** {severity_emoji} {severity}/5")
+                    st.write(f"**Priority:** {priority_emoji} {priority.title()}")
+                
+                with col2:
+                    st.write(f"**Suggested Action:** {action_emoji} {suggested_action.replace('_', ' ').title()}")
+                    st.write(f"**Detected:** {approval.get('detected_at', 'Unknown')}")
+                    st.write(f"**Description:** {approval.get('description', 'No description')}")
+                
+                # AI Explanation
+                if approval.get("llm_explanation"):
+                    st.markdown("**🤖 AI Explanation:**")
+                    st.info(approval.get("llm_explanation"))
+                
+                # Suggested SQL
+                if approval.get("suggested_sql"):
+                    st.markdown("**💻 Suggested SQL Fix:**")
+                    st.code(approval.get("suggested_sql"), language="sql")
+                
+                # Action buttons
+                st.markdown("---")
+                col1, col2, col3, col4 = st.columns(4)
+                
+                with col1:
+                    if st.button(f"✅ Approve", key=f"approve_{anomaly_id}", type="primary"):
+                        try:
+                            response = requests.post(
+                                f"{API_BASE_URL}/agent/approve/{anomaly_id}",
+                                json={"approved": True, "approved_by": "human"}
+                            )
+                            if response.status_code == 200:
+                                st.success("✅ Action approved and executed!")
+                                st.rerun()
+                            else:
+                                st.error(f"❌ Failed to approve: {response.text}")
+                        except Exception as e:
+                            st.error(f"❌ Error: {e}")
+                
+                with col2:
+                    if st.button(f"❌ Reject", key=f"reject_{anomaly_id}"):
+                        try:
+                            response = requests.post(
+                                f"{API_BASE_URL}/agent/approve/{anomaly_id}",
+                                json={"approved": False, "approved_by": "human"}
+                            )
+                            if response.status_code == 200:
+                                st.success("❌ Action rejected!")
+                                st.rerun()
+                            else:
+                                st.error(f"❌ Failed to reject: {response.text}")
+                        except Exception as e:
+                            st.error(f"❌ Error: {e}")
+                
+                with col3:
+                    if st.button(f"🔍 Get AI Explanation", key=f"explain_{anomaly_id}"):
+                        try:
+                            response = requests.post(
+                                f"{API_BASE_URL}/agent/explain",
+                                json={"anomaly_id": anomaly_id}
+                            )
+                            if response.status_code == 200:
+                                st.success("🤖 AI explanation generated!")
+                                st.rerun()
+                            else:
+                                st.error("❌ Failed to generate explanation")
+                        except Exception as e:
+                            st.error(f"❌ Error: {e}")
+                
+                with col4:
+                    if st.button(f"📊 View Details", key=f"details_{anomaly_id}"):
+                        st.info("Navigate to Anomalies page to view full details")
+    
+    except Exception as e:
+        st.error(f"Failed to fetch pending approvals: {e}")
 
 
 def show_settings():
