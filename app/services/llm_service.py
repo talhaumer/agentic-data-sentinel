@@ -20,27 +20,43 @@ class LLMService:
 
     def __init__(self):
         self.settings = get_settings()
+        self.llm_available = True
 
         # Initialize LLM based on provider
-        if self.settings.llm_provider.lower() == "groq":
-            self.llm = ChatGroq(
-                model_name=self.settings.llm_model,
-                groq_api_key=self.settings.llm_api_key,
-                temperature=0.1,
-                max_tokens=1000,
-            )
-        else:  # Default to OpenAI
-            self.llm = ChatOpenAI(
-                model_name=self.settings.llm_model,
-                openai_api_key=self.settings.llm_api_key,
-                temperature=0.1,
-                max_tokens=1000,
-            )
+        try:
+            if self.settings.llm_provider.lower() == "groq":
+                self.llm = ChatGroq(
+                    model_name=self.settings.llm_model,
+                    groq_api_key=self.settings.llm_api_key,
+                    temperature=0.1,
+                    max_tokens=1000,
+                )
+            else:  # Default to OpenAI
+                self.llm = ChatOpenAI(
+                    model_name=self.settings.llm_model,
+                    openai_api_key=self.settings.llm_api_key,
+                    temperature=0.1,
+                    max_tokens=1000,
+                )
+        except Exception as e:
+            logger.error("Failed to initialize LLM", error=str(e))
+            self.llm_available = False
+            self.llm = None
 
     async def explain_anomaly(
         self, anomaly: Anomaly, context: Optional[Dict[str, Any]] = None
     ) -> LLMExplanationResponse:
         """Generate LLM explanation for an anomaly."""
+        # Check if LLM is available
+        if not self.llm_available or self.llm is None:
+            logger.warning("LLM not available, using fallback explanation", anomaly_id=anomaly.id)
+            return LLMExplanationResponse(
+                explanation=self._generate_fallback_explanation(anomaly),
+                confidence=0.3,
+                suggested_sql=self._generate_fallback_sql(anomaly),
+                action_type=self._suggest_fallback_action(anomaly),
+            )
+
         try:
             logger.info("Generating LLM explanation", anomaly_id=anomaly.id)
 
@@ -83,12 +99,13 @@ class LLMService:
                 anomaly_id=anomaly.id,
                 error=str(e),
             )
-            # Return fallback explanation
+            # Return meaningful fallback explanation based on anomaly type
+            fallback_explanation = self._generate_fallback_explanation(anomaly)
             return LLMExplanationResponse(
-                explanation=f"Unable to generate explanation for {anomaly.issue_type} anomaly in {anomaly.column_name}",
-                confidence=0.0,
-                suggested_sql=None,
-                action_type="no_action",
+                explanation=fallback_explanation,
+                confidence=0.3,
+                suggested_sql=self._generate_fallback_sql(anomaly),
+                action_type=self._suggest_fallback_action(anomaly),
             )
 
     def _build_explanation_prompt(self, context: Dict[str, Any]) -> str:
@@ -229,3 +246,54 @@ Please provide recommendations in JSON format:
                 "monitoring_suggestions": ["Set up automated alerts"],
                 "process_improvements": ["Implement data quality checks"],
             }
+
+    def _generate_fallback_explanation(self, anomaly: Anomaly) -> str:
+        """Generate a meaningful fallback explanation when LLM fails."""
+        issue_type = anomaly.issue_type.lower()
+        column_name = anomaly.column_name or "unknown column"
+        severity = anomaly.severity
+        
+        explanations = {
+            "uniqueness": f"This {issue_type} anomaly in column '{column_name}' indicates low data diversity. This commonly occurs when data contains many duplicate values, categorical data with limited options, or when data generation processes create repetitive patterns. For severity {severity}/5, this suggests the data may not be suitable for certain analytical purposes that require unique identifiers.",
+            
+            "null_values": f"This {issue_type} anomaly in column '{column_name}' indicates missing data. This can occur due to incomplete data collection, ETL failures, or optional fields not being populated. For severity {severity}/5, this may impact data completeness and analysis accuracy.",
+            
+            "completeness": f"This {issue_type} anomaly in column '{column_name}' suggests incomplete data records. This typically happens when required fields are not being populated during data ingestion or when data sources have gaps. For severity {severity}/5, this may affect data reliability.",
+            
+            "consistency": f"This {issue_type} anomaly in column '{column_name}' indicates data format inconsistencies. This often occurs when data comes from multiple sources with different standards, or when data transformation rules are not properly applied. For severity {severity}/5, this may cause processing issues.",
+            
+            "accuracy": f"This {issue_type} anomaly in column '{column_name}' suggests data accuracy issues. This can happen when data validation rules fail, data entry errors occur, or when data becomes stale. For severity {severity}/5, this may impact business decisions.",
+        }
+        
+        return explanations.get(issue_type, f"This {issue_type} anomaly in column '{column_name}' with severity {severity}/5 requires investigation. The specific root cause should be determined by examining the data source and processing pipeline.")
+
+    def _generate_fallback_sql(self, anomaly: Anomaly) -> str:
+        """Generate fallback SQL for investigation."""
+        column_name = anomaly.column_name or "column_name"
+        table_name = anomaly.table_name or "table_name"
+        issue_type = anomaly.issue_type.lower()
+        
+        sql_queries = {
+            "uniqueness": f"SELECT {column_name}, COUNT(*) as frequency FROM {table_name} GROUP BY {column_name} ORDER BY frequency DESC LIMIT 10;",
+            "null_values": f"SELECT COUNT(*) as total_rows, COUNT({column_name}) as non_null_count, COUNT(*) - COUNT({column_name}) as null_count FROM {table_name};",
+            "completeness": f"SELECT COUNT(*) as total_rows, COUNT({column_name}) as complete_count, ROUND(COUNT({column_name}) * 100.0 / COUNT(*), 2) as completeness_percentage FROM {table_name};",
+            "consistency": f"SELECT {column_name}, COUNT(*) as frequency FROM {table_name} WHERE {column_name} IS NOT NULL GROUP BY {column_name} ORDER BY frequency DESC LIMIT 20;",
+            "accuracy": f"SELECT {column_name}, COUNT(*) as frequency FROM {table_name} WHERE {column_name} IS NOT NULL GROUP BY {column_name} ORDER BY frequency DESC LIMIT 10;",
+        }
+        
+        return sql_queries.get(issue_type, f"SELECT * FROM {table_name} WHERE {column_name} IS NOT NULL LIMIT 10;")
+
+    def _suggest_fallback_action(self, anomaly: Anomaly) -> str:
+        """Suggest fallback action based on anomaly severity and type."""
+        severity = anomaly.severity
+        issue_type = anomaly.issue_type.lower()
+        
+        # High severity anomalies should be investigated
+        if severity >= 4:
+            return "create_issue"
+        elif severity >= 3:
+            return "notify_owner"
+        elif severity >= 2:
+            return "auto_fix"
+        else:
+            return "no_action"

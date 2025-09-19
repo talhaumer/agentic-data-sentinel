@@ -144,13 +144,17 @@ def get_status_indicator(status: str) -> str:
     """Get status indicator HTML."""
     status_map = {
         "healthy": "status-healthy",
+        "connected": "status-healthy",
         "completed": "status-healthy", 
         "open": "status-critical",
         "failed": "status-critical",
+        "disconnected": "status-critical",
+        "unhealthy": "status-critical",
         "running": "status-warning",
         "pending": "status-warning",
         "resolved": "status-healthy",
-        "investigating": "status-warning"
+        "investigating": "status-warning",
+        "pending_approval": "status-warning"
     }
     css_class = status_map.get(status.lower(), "status-unknown")
     return f'<span class="status-indicator {css_class}"></span>'
