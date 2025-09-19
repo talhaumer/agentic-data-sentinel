@@ -28,14 +28,17 @@ async def trigger_workflow(
     """Trigger agent workflow for a dataset."""
     try:
         # Verify dataset exists
-        dataset = db.query(Dataset).filter(Dataset.id == request.dataset_id).first()
+        dataset = db.query(Dataset).filter(
+            Dataset.id == request.dataset_id
+        ).first()
         if not dataset:
             raise HTTPException(status_code=404, detail="Dataset not found")
 
         # Run agent workflow synchronously (service will create its own run record)
         agent_service = SimpleAgentService()
         result = await agent_service.run_workflow(
-            request.dataset_id, request.include_llm_explanation
+            request.dataset_id, 
+            request.include_llm_explanation
         )
 
         logger.info(
