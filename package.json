@@ -1,0 +1,28 @@
+{
+  "name": "data-sentinel-v1",
+  "version": "1.0.0",
+  "description": "AI-powered data quality monitoring and anomaly detection",
+  "main": "vercel_main.py",
+  "scripts": {
+    "dev": "vercel dev",
+    "build": "vercel build",
+    "deploy": "vercel --prod",
+    "preview": "vercel"
+  },
+  "keywords": [
+    "data-quality",
+    "anomaly-detection",
+    "ai",
+    "monitoring",
+    "fastapi",
+    "vercel"
+  ],
+  "author": "Data Sentinel Team",
+  "license": "MIT",
+  "devDependencies": {
+    "vercel": "^32.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
