@@ -20,8 +20,10 @@ try:
     from app.database_vercel import engine, Base, init_db
 except ImportError:
     from app.database import engine, Base
+
     def init_db():
         return True
+
 
 from app.middleware.logging import LoggingMiddleware
 
@@ -33,22 +35,24 @@ logger = structlog.get_logger(__name__)
 IS_VERCEL = os.getenv("VERCEL") == "1"
 VERCEL_ENV = os.getenv("VERCEL_ENV", "development")
 
+
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     """Application lifespan manager for Vercel."""
     # Startup
     logger.info("Starting Data Sentinel v1", platform="Vercel", env=VERCEL_ENV)
-    
+
     # Initialize database
     if init_db():
         logger.info("Database initialized successfully")
     else:
         logger.warning("Database initialization failed")
-    
+
     yield
-    
+
     # Shutdown
     logger.info("Shutting down Data Sentinel v1")
+
 
 # Create FastAPI app with Vercel optimizations
 app = FastAPI(
@@ -57,13 +61,15 @@ app = FastAPI(
     version="1.0.0",
     docs_url="/docs" if not IS_VERCEL else None,  # Disable docs in production
     redoc_url="/redoc" if not IS_VERCEL else None,
-    lifespan=lifespan
+    lifespan=lifespan,
 )
 
 # CORS middleware for Vercel
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"] if IS_VERCEL else ["http://localhost:3000", "http://localhost:8501"],
+    allow_origins=(
+        ["*"] if IS_VERCEL else ["http://localhost:3000", "http://localhost:8501"]
+    ),
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -72,8 +78,7 @@ app.add_middleware(
 # Trusted host middleware for Vercel
 if IS_VERCEL:
     app.add_middleware(
-        TrustedHostMiddleware,
-        allowed_hosts=["*.vercel.app", "vercel.app"]
+        TrustedHostMiddleware, allowed_hosts=["*.vercel.app", "vercel.app"]
     )
 
 # Logging middleware
@@ -81,6 +86,7 @@ app.add_middleware(LoggingMiddleware)
 
 # Include API router
 app.include_router(api_router, prefix="/api/v1")
+
 
 # Health check endpoint for Vercel
 @app.get("/health")
@@ -91,8 +97,9 @@ async def health_check():
         "service": "Data Sentinel v1",
         "platform": "Vercel",
         "environment": VERCEL_ENV,
-        "version": "1.0.0"
+        "version": "1.0.0",
     }
+
 
 # Root endpoint
 @app.get("/")
@@ -104,15 +111,18 @@ async def root():
         "environment": VERCEL_ENV,
         "docs": "/docs" if not IS_VERCEL else "Documentation disabled in production",
         "health": "/health",
-        "api": "/api/v1"
+        "api": "/api/v1",
     }
+
 
 # Vercel serverless handler
 def handler(request):
     """Vercel serverless handler."""
     return app(request.scope, request.receive, request.send)
 
+
 # For local development
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run(app, host="0.0.0.0", port=8000)

@@ -121,21 +121,23 @@ async def get_workflow_status(run_id: int, db: Session = Depends(get_db)):
 
 @router.post("/approve/{anomaly_id}")
 async def approve_anomaly_action(
-    anomaly_id: int, 
+    anomaly_id: int,
     approved: bool,
     approved_by: str = "human",
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """Approve or reject a pending anomaly action."""
     try:
         agent_service = SimpleAgentService()
         result = await agent_service.approve_action(anomaly_id, approved, approved_by)
-        
+
         if result.get("success"):
             return result
         else:
-            raise HTTPException(status_code=400, detail=result.get("message", "Approval failed"))
-            
+            raise HTTPException(
+                status_code=400, detail=result.get("message", "Approval failed")
+            )
+
     except Exception as e:
         logger.error("Failed to process approval", anomaly_id=anomaly_id, error=str(e))
         raise HTTPException(status_code=500, detail="Failed to process approval")
@@ -146,11 +148,11 @@ async def get_pending_approvals(db: Session = Depends(get_db)):
     """Get all anomalies pending human approval."""
     try:
         from app.models import Anomaly
-        
-        pending_anomalies = db.query(Anomaly).filter(
-            Anomaly.status == "pending_approval"
-        ).all()
-        
+
+        pending_anomalies = (
+            db.query(Anomaly).filter(Anomaly.status == "pending_approval").all()
+        )
+
         approvals = []
         for anomaly in pending_anomalies:
             # Determine suggested action based on severity
@@ -166,27 +168,26 @@ async def get_pending_approvals(db: Session = Depends(get_db)):
             else:
                 suggested_action = "no_action"
                 priority = "low"
-            
-            approvals.append({
-                "anomaly_id": anomaly.id,
-                "dataset_id": anomaly.dataset_id,
-                "table_name": anomaly.table_name,
-                "column_name": anomaly.column_name,
-                "issue_type": anomaly.issue_type,
-                "severity": anomaly.severity,
-                "description": anomaly.description,
-                "suggested_action": suggested_action,
-                "priority": priority,
-                "detected_at": anomaly.detected_at,
-                "llm_explanation": anomaly.llm_explanation,
-                "suggested_sql": anomaly.suggested_sql
-            })
-        
-        return {
-            "pending_approvals": approvals,
-            "count": len(approvals)
-        }
-        
+
+            approvals.append(
+                {
+                    "anomaly_id": anomaly.id,
+                    "dataset_id": anomaly.dataset_id,
+                    "table_name": anomaly.table_name,
+                    "column_name": anomaly.column_name,
+                    "issue_type": anomaly.issue_type,
+                    "severity": anomaly.severity,
+                    "description": anomaly.description,
+                    "suggested_action": suggested_action,
+                    "priority": priority,
+                    "detected_at": anomaly.detected_at,
+                    "llm_explanation": anomaly.llm_explanation,
+                    "suggested_sql": anomaly.suggested_sql,
+                }
+            )
+
+        return {"pending_approvals": approvals, "count": len(approvals)}
+
     except Exception as e:
         logger.error("Failed to get pending approvals", error=str(e))
         raise HTTPException(status_code=500, detail="Failed to get pending approvals")

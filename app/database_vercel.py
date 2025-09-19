@@ -33,19 +33,17 @@ if IS_VERCEL and VERCEL_ENV != "production":
         DATABASE_URL,
         poolclass=StaticPool,
         connect_args={"check_same_thread": False},
-        echo=False
+        echo=False,
     )
 else:
     # Production or local database
     engine = create_engine(
-        DATABASE_URL,
-        echo=False,
-        pool_pre_ping=True,
-        pool_recycle=300
+        DATABASE_URL, echo=False, pool_pre_ping=True, pool_recycle=300
     )
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
+
 
 def get_db():
     """Get database session for Vercel."""
@@ -55,18 +53,20 @@ def get_db():
     finally:
         db.close()
 
+
 def init_db():
     """Initialize database tables for Vercel."""
     try:
         # Import models to ensure they're registered
         from app.models import Dataset, Run, Anomaly, ValidationRule, ActionLog
-        
+
         # Create tables
         Base.metadata.create_all(bind=engine)
         return True
     except Exception as e:
         print(f"Database initialization failed: {e}")
         return False
+
 
 # Initialize database on import for Vercel
 if IS_VERCEL:

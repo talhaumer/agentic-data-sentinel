@@ -103,7 +103,9 @@ class AnomalyBase(BaseSchema):
     suggested_sql: Optional[str] = None
     llm_explanation: Optional[str] = None
     action_taken: Optional[str] = Field(None, max_length=100)
-    status: str = Field("open", pattern="^(open|investigating|resolved|ignored|pending_approval)$")
+    status: str = Field(
+        "open", pattern="^(open|investigating|resolved|ignored|pending_approval)$"
+    )
     extra: Optional[Dict[str, Any]] = None
 
 

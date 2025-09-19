@@ -43,7 +43,7 @@ async def check_llm() -> str:
     """Check LLM service connectivity."""
     try:
         from app.services.llm_service import LLMService
-        
+
         # Check if API key is configured
         if (
             not settings.llm_api_key
@@ -51,12 +51,12 @@ async def check_llm() -> str:
             or settings.llm_api_key == "gsk_your-groq-api-key-here"
         ):
             return "disconnected"
-        
+
         # Test LLM service initialization
         llm_service = LLMService()
         if not llm_service.llm_available:
             return "disconnected"
-            
+
         return "connected"
     except Exception as e:
         logger.error("LLM health check failed", error=str(e))

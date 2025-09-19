@@ -24,7 +24,7 @@ app = FastAPI(
     description="AI-powered data quality monitoring and anomaly detection",
     version="1.0.0",
     docs_url="/docs",
-    redoc_url="/redoc"
+    redoc_url="/redoc",
 )
 
 # Add CORS middleware for Vercel
@@ -39,6 +39,7 @@ app.add_middleware(
 # Mount the main application
 app.mount("/api", data_sentinel_app)
 
+
 # Health check endpoint for Vercel
 @app.get("/health")
 async def health_check():
@@ -47,8 +48,9 @@ async def health_check():
         "status": "healthy",
         "service": "Data Sentinel v1",
         "platform": "Vercel",
-        "version": "1.0.0"
+        "version": "1.0.0",
     }
+
 
 # Root endpoint
 @app.get("/")
@@ -58,15 +60,18 @@ async def root():
         "message": "Data Sentinel v1 - AI-powered data quality monitoring",
         "docs": "/docs",
         "health": "/health",
-        "api": "/api"
+        "api": "/api",
     }
+
 
 # Vercel serverless handler
 def handler(request):
     """Vercel serverless handler."""
     return app(request.scope, request.receive, request.send)
 
+
 # For local development
 if __name__ == "__main__":
     import uvicorn
+
     uvicorn.run(app, host="0.0.0.0", port=8000)
