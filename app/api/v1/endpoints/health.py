@@ -1,7 +1,7 @@
 """Health check endpoints."""
 
 from datetime import datetime
-from typing import Dict, Any
+# Removed unused imports
 
 import redis
 import structlog

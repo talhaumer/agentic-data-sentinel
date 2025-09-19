@@ -58,7 +58,7 @@ def init_db():
     """Initialize database tables for Vercel."""
     try:
         # Import models to ensure they're registered
-        from app.models import Dataset, Run, Anomaly, ValidationRule, ActionLog
+        from app.models import Dataset, Run, Anomaly, ValidationRule, ActionLog  # noqa: F401
 
         # Create tables
         Base.metadata.create_all(bind=engine)

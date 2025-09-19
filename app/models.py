@@ -1,7 +1,7 @@
 """Database models for the Data Sentinel application."""
 
 from datetime import datetime
-from typing import Optional
+# Removed unused import
 
 from sqlalchemy import Column, DateTime, Float, ForeignKey, Integer, String, Text, JSON
 from sqlalchemy.orm import relationship

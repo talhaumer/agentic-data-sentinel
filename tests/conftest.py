@@ -9,7 +9,7 @@ from fastapi.testclient import TestClient
 
 from app.main import app
 from app.database import get_db, Base
-from app.config import get_settings
+# Removed unused import
 
 # Test database URL
 TEST_DATABASE_URL = "sqlite:///./test.db"

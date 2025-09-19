@@ -1,6 +1,6 @@
 """Simplified Agent workflow service without Celery."""
 
-import asyncio
+# Removed unused import
 from typing import Dict, Any, List
 from datetime import datetime
 

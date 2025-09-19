@@ -1,6 +1,6 @@
 """API endpoint tests."""
 
-import pytest
+# Removed unused import
 from fastapi.testclient import TestClient
 
 

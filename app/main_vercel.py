@@ -13,14 +13,12 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
 
 from app.api.v1.api import api_router
-from app.config import get_settings
+# Removed unused import
 
 # Vercel-specific database import
 try:
-    from app.database_vercel import engine, Base, init_db
+    from app.database_vercel import init_db
 except ImportError:
-    from app.database import engine, Base
-
     def init_db():
         return True
 

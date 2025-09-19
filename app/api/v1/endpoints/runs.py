@@ -11,7 +11,7 @@ from app.models import Run, Dataset
 from app.schemas import Run as RunSchema, RunCreate, RunUpdate
 from fastapi import BackgroundTasks
 from app.services.agent_service_simple import SimpleAgentService
-import asyncio
+# Removed unused import
 
 
 logger = structlog.get_logger(__name__)

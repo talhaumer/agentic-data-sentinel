@@ -3,13 +3,10 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-import plotly.graph_objects as go
-from plotly.subplots import make_subplots
 from datetime import datetime, timedelta
 import requests
-import json
 import time
-from typing import Dict, List, Any
+from typing import Dict, Any
 
 # Page configuration
 st.set_page_config(
