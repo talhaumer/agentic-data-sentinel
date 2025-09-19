@@ -33,14 +33,23 @@ class Run(Base):
 class Anomaly(Base):
     """Detected data quality issues and anomalies."""
 
+    __tablename__ = "anomalies"
 
-    id = Column(Integer, primary_key = True, index = True)
-        String(100), nullable = False
-    )  # null_rate, drift, uniqueness, etc.
-        String(100), nullable = True
-    )  # auto_fix, notify, create_issue, none
-        String(50), default="open"
-    )  # open, investigating, resolved, ignored
+    id = Column(Integer, primary_key=True, index=True)
+    dataset_id = Column(Integer, ForeignKey("datasets.id"), nullable=False)
+    table_name = Column(String(255), nullable=True)
+    column_name = Column(String(255), nullable=True)
+    issue_type = Column(String(100), nullable=False)  # null_rate, drift, uniqueness, etc.
+    severity = Column(Integer, nullable=False)  # 1-5 scale
+    detected_at = Column(DateTime, default=datetime.utcnow)
+    description = Column(Text, nullable=True)
+    suggested_sql = Column(Text, nullable=True)
+    llm_explanation = Column(Text, nullable=True)
+    action_taken = Column(String(100), nullable=True)  # auto_fix, notify, create_issue, none
+    status = Column(String(50), default="open")  # open, investigating, resolved, ignored
+    extra = Column(JSON, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     # Relationships
     dataset = relationship("Dataset", back_populates="anomalies")
@@ -48,10 +57,16 @@ class Anomaly(Base):
 class ValidationRule(Base):
     """Data quality validation rules and thresholds."""
 
+    __tablename__ = "validation_rules"
 
-    id = Column(Integer, primary_key = True, index = True)
-        String(100), nullable = False
-    )  # null_rate, uniqueness, range, etc.
+    id = Column(Integer, primary_key=True, index=True)
+    dataset_id = Column(Integer, ForeignKey("datasets.id"), nullable=False)
+    rule_name = Column(String(255), nullable=False)
+    rule_type = Column(String(100), nullable=False)  # null_rate, uniqueness, range, etc.
+    threshold_value = Column(Float, nullable=True)
+    is_active = Column(String(10), default="true")
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     # Relationships
     dataset = relationship("Dataset")
@@ -59,8 +74,15 @@ class ValidationRule(Base):
 class ActionLog(Base):
     """Audit log for all actions taken by the system."""
 
+    __tablename__ = "action_logs"
 
-    id = Column(Integer, primary_key = True, index = True)
+    id = Column(Integer, primary_key=True, index=True)
+    anomaly_id = Column(Integer, ForeignKey("anomalies.id"), nullable=True)
+    action_type = Column(String(100), nullable=False)  # auto_fix, notify, create_issue
+    action_details = Column(JSON, nullable=True)
+    status = Column(String(50), nullable=False)  # success, failed, pending
+    executed_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=datetime.utcnow)
 
     # Relationships
     anomaly = relationship("Anomaly")

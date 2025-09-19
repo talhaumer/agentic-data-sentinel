@@ -10,6 +10,8 @@ class BaseSchema(BaseModel):
     """Base schema with common configuration."""
 
     class Config:
+        from_attributes = True
+        json_encoders = {datetime: lambda v: v.isoformat()}
 
 # Dataset schemas
 class DatasetBase(BaseSchema):

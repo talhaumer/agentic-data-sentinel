@@ -48,6 +48,8 @@ class Settings(BaseSettings):
     health_score_threshold: float = Field(0.8, env="HEALTH_SCORE_THRESHOLD")
 
     class Config:
+        env_file = ".env"
+        case_sensitive = False
 
 @lru_cache()
 def get_settings() -> Settings:
