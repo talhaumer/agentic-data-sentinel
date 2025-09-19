@@ -18,13 +18,13 @@ if IS_VERCEL:
     # Production Vercel environment
     if VERCEL_ENV == "production":
         # Use external database (PostgreSQL, PlanetScale, etc.)
-        DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./data / sentinel.db")
+        DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./data/sentinel.db")
     else:
         # Preview / development - use in - memory database
         DATABASE_URL = "sqlite:///:memory:"
 else:
     # Local development
-    DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./data / sentinel.db")
+    DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./data/sentinel.db")
 
 # Create engine with Vercel optimizations
 if IS_VERCEL and VERCEL_ENV != "production":

@@ -22,7 +22,7 @@ st.set_page_config(
 )
 
 # API base URL
-API_BASE_URL = "http://localhost:8000 / api / v1"
+    API_BASE_URL = "http://localhost:8000/api/v1"  # noqa: E501
 
 # Enhanced Custom CSS
 st.markdown(

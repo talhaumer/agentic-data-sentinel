@@ -2,7 +2,7 @@
   "version": 2,
   "builds": [
     {
-      "src": "vercel_main.py",
+      "src": "api/index.py",
       "use": "@vercel/python",
       "config": {
         "maxLambdaSize": "50mb"
@@ -11,27 +11,15 @@
   ],
   "routes": [
     {
-      "src": "/api/(.*)",
-      "dest": "/vercel_main.py"
-    },
-    {
-      "src": "/health",
-      "dest": "/vercel_main.py"
-    },
-    {
-      "src": "/docs",
-      "dest": "/vercel_main.py"
-    },
-    {
-      "src": "/",
-      "dest": "/vercel_main.py"
+      "src": "/(.*)",
+      "dest": "/api/index.py"
     }
   ],
   "env": {
     "PYTHONPATH": "."
   },
   "functions": {
-    "vercel_main.py": {
+    "api/index.py": {
       "maxDuration": 30
     }
   }
