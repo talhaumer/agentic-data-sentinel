@@ -16,8 +16,7 @@ TEST_DATABASE_URL = "sqlite:///./test.db"
 
 # Create test engine
 engine = create_engine(TEST_DATABASE_URL, connect_args={"check_same_thread": False})
-TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
+TestingSessionLocal = sessionmaker(autocommit = False, autoflush = False, bind = engine)
 
 @pytest.fixture(scope="session")
 def event_loop():
@@ -26,12 +25,11 @@ def event_loop():
     yield loop
     loop.close()
 
-
 @pytest.fixture
 def db_session() -> Generator:
     """Create a test database session."""
     # Create tables
-    Base.metadata.create_all(bind=engine)
+    Base.metadata.create_all(bind = engine)
 
     # Create session
     session = TestingSessionLocal()
@@ -41,8 +39,7 @@ def db_session() -> Generator:
     finally:
         session.close()
         # Drop tables
-        Base.metadata.drop_all(bind=engine)
-
+        Base.metadata.drop_all(bind = engine)
 
 @pytest.fixture
 def client(db_session) -> Generator:
@@ -61,12 +58,10 @@ def client(db_session) -> Generator:
 
     app.dependency_overrides.clear()
 
-
 @pytest.fixture
 def sample_dataset_data():
     """Sample dataset data for testing."""
     return {"name": "test_events", "owner": "test_user", "source": "test_source"}
-
 
 @pytest.fixture
 def sample_anomaly_data():

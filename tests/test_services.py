@@ -8,7 +8,6 @@ from app.services.validation_service import ValidationService
 from app.services.llm_service import LLMService
 from app.models import Dataset, Anomaly
 
-
 class TestValidationService:
     """Test validation service functionality."""
 
@@ -67,7 +66,7 @@ class TestValidationService:
             }
         )
 
-        dataset = Mock(spec=Dataset)
+        dataset = Mock(spec = Dataset)
         dataset.name = "test_table"
 
         results = await service._run_validation_checks(data, dataset)
@@ -75,7 +74,6 @@ class TestValidationService:
         assert len(results) > 0
         assert any(result["check_type"] == "null_rate" for result in results)
         assert any(result["check_type"] == "uniqueness" for result in results)
-
 
 class TestLLMService:
     """Test LLM service functionality."""
@@ -98,14 +96,14 @@ class TestLLMService:
 
             service = LLMService()
 
-            anomaly = Mock(spec=Anomaly)
+            anomaly = Mock(spec = Anomaly)
             anomaly.id = 1
             anomaly.table_name = "test_table"
             anomaly.column_name = "price"
             anomaly.issue_type = "null_rate"
             anomaly.severity = 3
             anomaly.description = "High null rate"
-            anomaly.detected_at = "2024-01-01T00:00:00Z"
+            anomaly.detected_at = "2024 - 01 - 01T00:00:00Z"
             anomaly.extra = {}
 
             explanation = await service.explain_anomaly(anomaly)
@@ -148,7 +146,7 @@ class TestLLMService:
             "issue_type": "null_rate",
             "severity": 3,
             "description": "High null rate",
-            "detected_at": "2024-01-01T00:00:00Z",
+            "detected_at": "2024 - 01 - 01T00:00:00Z",
             "extra_data": {},
         }
 

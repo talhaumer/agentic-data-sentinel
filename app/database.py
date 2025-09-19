@@ -14,25 +14,18 @@ if settings.database_url.startswith("sqlite"):
     # SQLite configuration
     engine = create_engine(
         settings.database_url,
-        poolclass=StaticPool,
         connect_args={"check_same_thread": False},
-        echo=settings.debug,
     )
 else:
     # PostgreSQL configuration
     engine = create_engine(
         settings.database_url,
-        poolclass=StaticPool,
-        pool_pre_ping=True,
-        echo=settings.debug,
     )
 
 # Create session factory
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+SessionLocal = sessionmaker(autocommit = False, autoflush = False, bind = engine)
 
 # Create base class for models
-Base = declarative_base()
-
 
 def get_db():
     """Get database session dependency."""

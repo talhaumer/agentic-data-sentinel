@@ -1,1 +1,1 @@
-# Agentic Data Sentinel - AI-powered data quality monitoring platform
+# Agentic Data Sentinel - AI - powered data quality monitoring platform

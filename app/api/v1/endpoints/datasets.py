@@ -18,11 +18,10 @@ from app.schemas import (
 logger = structlog.get_logger(__name__)
 router = APIRouter()
 
-
-@router.get("/", response_model=List[DatasetWithStats])
+@router.get("/", response_model = List[DatasetWithStats])
 async def list_datasets(
-    skip: int = Query(0, ge=0),
-    limit: int = Query(100, ge=1, le=1000),
+    skip: int = Query(0, ge = 0),
+    limit: int = Query(100, ge = 1, le = 1000),
     db: Session = Depends(get_db),
 ):
     """List all datasets with statistics."""
@@ -39,7 +38,6 @@ async def list_datasets(
                 "last_anomaly_at": (
                     max(
                         (anomaly.detected_at for anomaly in dataset.anomalies),
-                        default=None,
                     )
                     if dataset.anomalies
                     else None
@@ -52,17 +50,16 @@ async def list_datasets(
         return result
 
     except Exception as e:
-        logger.error("Failed to list datasets", error=str(e))
-        raise HTTPException(status_code=500, detail="Failed to list datasets")
+        logger.error("Failed to list datasets", error = str(e))
+        raise HTTPException(status_code = 500, detail="Failed to list datasets")
 
-
-@router.get("/{dataset_id}", response_model=DatasetWithStats)
+@router.get("/{dataset_id}", response_model = DatasetWithStats)
 async def get_dataset(dataset_id: int, db: Session = Depends(get_db)):
     """Get a specific dataset by ID."""
     try:
         dataset = db.query(Dataset).filter(Dataset.id == dataset_id).first()
         if not dataset:
-            raise HTTPException(status_code=404, detail="Dataset not found")
+            raise HTTPException(status_code = 404, detail="Dataset not found")
 
         # Add statistics
         stats = {
@@ -71,7 +68,7 @@ async def get_dataset(dataset_id: int, db: Session = Depends(get_db)):
             "last_run_status": dataset.runs[-1].status if dataset.runs else None,
             "last_anomaly_at": (
                 max(
-                    (anomaly.detected_at for anomaly in dataset.anomalies), default=None
+                    (anomaly.detected_at for anomaly in dataset.anomalies), default = None
                 )
                 if dataset.anomalies
                 else None
@@ -84,11 +81,10 @@ async def get_dataset(dataset_id: int, db: Session = Depends(get_db)):
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Failed to get dataset", dataset_id=dataset_id, error=str(e))
-        raise HTTPException(status_code=500, detail="Failed to get dataset")
+        logger.error("Failed to get dataset", dataset_id = dataset_id, error = str(e))
+        raise HTTPException(status_code = 500, detail="Failed to get dataset")
 
-
-@router.post("/", response_model=DatasetSchema)
+@router.post("/", response_model = DatasetSchema)
 async def create_dataset(dataset: DatasetCreate, db: Session = Depends(get_db)):
     """Create a new dataset."""
     try:
@@ -96,7 +92,6 @@ async def create_dataset(dataset: DatasetCreate, db: Session = Depends(get_db)):
         existing = db.query(Dataset).filter(Dataset.name == dataset.name).first()
         if existing:
             raise HTTPException(
-                status_code=400, detail="Dataset with this name already exists"
             )
 
         # Create new dataset
@@ -105,18 +100,17 @@ async def create_dataset(dataset: DatasetCreate, db: Session = Depends(get_db)):
         db.commit()
         db.refresh(db_dataset)
 
-        logger.info("Dataset created", dataset_id=db_dataset.id, name=dataset.name)
+        logger.info("Dataset created", dataset_id = db_dataset.id, name = dataset.name)
         return db_dataset
 
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Failed to create dataset", error=str(e))
+        logger.error("Failed to create dataset", error = str(e))
         db.rollback()
-        raise HTTPException(status_code=500, detail="Failed to create dataset")
+        raise HTTPException(status_code = 500, detail="Failed to create dataset")
 
-
-@router.put("/{dataset_id}", response_model=DatasetSchema)
+@router.put("/{dataset_id}", response_model = DatasetSchema)
 async def update_dataset(
     dataset_id: int, dataset: DatasetUpdate, db: Session = Depends(get_db)
 ):
@@ -124,26 +118,25 @@ async def update_dataset(
     try:
         db_dataset = db.query(Dataset).filter(Dataset.id == dataset_id).first()
         if not db_dataset:
-            raise HTTPException(status_code=404, detail="Dataset not found")
+            raise HTTPException(status_code = 404, detail="Dataset not found")
 
         # Update fields
-        update_data = dataset.dict(exclude_unset=True)
+        update_data = dataset.dict(exclude_unset = True)
         for field, value in update_data.items():
             setattr(db_dataset, field, value)
 
         db.commit()
         db.refresh(db_dataset)
 
-        logger.info("Dataset updated", dataset_id=dataset_id)
+        logger.info("Dataset updated", dataset_id = dataset_id)
         return db_dataset
 
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Failed to update dataset", dataset_id=dataset_id, error=str(e))
+        logger.error("Failed to update dataset", dataset_id = dataset_id, error = str(e))
         db.rollback()
-        raise HTTPException(status_code=500, detail="Failed to update dataset")
-
+        raise HTTPException(status_code = 500, detail="Failed to update dataset")
 
 @router.delete("/{dataset_id}")
 async def delete_dataset(dataset_id: int, db: Session = Depends(get_db)):
@@ -151,17 +144,17 @@ async def delete_dataset(dataset_id: int, db: Session = Depends(get_db)):
     try:
         db_dataset = db.query(Dataset).filter(Dataset.id == dataset_id).first()
         if not db_dataset:
-            raise HTTPException(status_code=404, detail="Dataset not found")
+            raise HTTPException(status_code = 404, detail="Dataset not found")
 
         db.delete(db_dataset)
         db.commit()
 
-        logger.info("Dataset deleted", dataset_id=dataset_id)
+        logger.info("Dataset deleted", dataset_id = dataset_id)
         return {"message": "Dataset deleted successfully"}
 
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Failed to delete dataset", dataset_id=dataset_id, error=str(e))
+        logger.error("Failed to delete dataset", dataset_id = dataset_id, error = str(e))
         db.rollback()
-        raise HTTPException(status_code=500, detail="Failed to delete dataset")
+        raise HTTPException(status_code = 500, detail="Failed to delete dataset")

@@ -9,9 +9,8 @@ from app.config import get_settings
 
 logger = structlog.get_logger(__name__)
 
-
 class MCPService:
-    """Service for MCP-based external integrations."""
+    """Service for MCP - based external integrations."""
 
     def __init__(self):
         self.settings = get_settings()
@@ -46,12 +45,12 @@ class MCPService:
 
             async with httpx.AsyncClient() as client:
                 response = await client.post(
-                    self.settings.slack_webhook_url, json=payload, timeout=10.0
+                    self.settings.slack_webhook_url, json = payload, timeout = 10.0
                 )
 
                 if response.status_code == 200:
                     logger.info(
-                        "Slack notification sent", channel=channel, priority=priority
+                        "Slack notification sent", channel = channel, priority = priority
                     )
                     return {
                         "success": True,
@@ -59,15 +58,15 @@ class MCPService:
                     }
                 else:
                     logger.error(
-                        "Slack notification failed", status_code=response.status_code
+                        "Slack notification failed", status_code = response.status_code
                     )
                     return {
                         "success": False,
-                        "message": f"Slack API error: {response.status_code}",
+                        "message": "Slack API error: {response.status_code}",
                     }
 
         except Exception as e:
-            logger.error("Failed to send Slack notification", error=str(e))
+            logger.error("Failed to send Slack notification", error = str(e))
             return {"success": False, "error": str(e)}
 
     async def create_issue(
@@ -116,35 +115,34 @@ class MCPService:
 
             async with httpx.AsyncClient() as client:
                 response = await client.post(
-                    f"{self.settings.jira_base_url}/rest/api/2/issue",
-                    json=payload,
-                    auth=auth,
-                    timeout=30.0,
+                    "{self.settings.jira_base_url}/rest / api / 2/issue",
+                    json = payload,
+                    auth = auth,
                 )
 
                 if response.status_code == 201:
                     issue_data = response.json()
                     issue_key = issue_data.get("key")
                     logger.info(
-                        "Jira issue created", issue_key=issue_key, priority=priority
+                        "Jira issue created", issue_key = issue_key, priority = priority
                     )
                     return {
                         "success": True,
                         "message": "Issue created successfully",
                         "issue_key": issue_key,
-                        "issue_url": f"{self.settings.jira_base_url}/browse/{issue_key}",
+                        "issue_url": "{self.settings.jira_base_url}/browse/{issue_key}",
                     }
                 else:
                     logger.error(
-                        "Jira issue creation failed", status_code=response.status_code
+                        "Jira issue creation failed", status_code = response.status_code
                     )
                     return {
                         "success": False,
-                        "message": f"Jira API error: {response.status_code}",
+                        "message": "Jira API error: {response.status_code}",
                     }
 
         except Exception as e:
-            logger.error("Failed to create Jira issue", error=str(e))
+            logger.error("Failed to create Jira issue", error = str(e))
             return {"success": False, "error": str(e)}
 
     async def create_github_issue(
@@ -153,11 +151,11 @@ class MCPService:
         """Create issue in GitHub."""
         try:
             # This would require GitHub API token configuration
-            logger.info("GitHub issue creation not implemented", repo=repo, title=title)
+            logger.info("GitHub issue creation not implemented", repo = repo, title = title)
             return {"success": False, "message": "GitHub integration not implemented"}
 
         except Exception as e:
-            logger.error("Failed to create GitHub issue", error=str(e))
+            logger.error("Failed to create GitHub issue", error = str(e))
             return {"success": False, "error": str(e)}
 
     async def trigger_dag_run(
@@ -166,11 +164,11 @@ class MCPService:
         """Trigger Airflow DAG run."""
         try:
             # This would require Airflow API configuration
-            logger.info("Airflow DAG trigger not implemented", dag_id=dag_id)
+            logger.info("Airflow DAG trigger not implemented", dag_id = dag_id)
             return {"success": False, "message": "Airflow integration not implemented"}
 
         except Exception as e:
-            logger.error("Failed to trigger DAG", dag_id=dag_id, error=str(e))
+            logger.error("Failed to trigger DAG", dag_id = dag_id, error = str(e))
             return {"success": False, "error": str(e)}
 
     async def send_email(
@@ -179,9 +177,9 @@ class MCPService:
         """Send email notification."""
         try:
             # This would require email service configuration (SendGrid, SES, etc.)
-            logger.info("Email sending not implemented", to=to, subject=subject)
+            logger.info("Email sending not implemented", to = to, subject = subject)
             return {"success": False, "message": "Email integration not implemented"}
 
         except Exception as e:
-            logger.error("Failed to send email", error=str(e))
+            logger.error("Failed to send email", error = str(e))
             return {"success": False, "error": str(e)}

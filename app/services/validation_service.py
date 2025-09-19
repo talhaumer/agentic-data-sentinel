@@ -19,7 +19,6 @@ from app.schemas import AnomalyCreate
 logger = structlog.get_logger(__name__)
 settings = get_settings()
 
-
 class ValidationService:
     """Service for data validation and quality checking."""
 
@@ -29,13 +28,13 @@ class ValidationService:
     async def validate_dataset(self, dataset: Dataset, db: Session) -> Dict[str, Any]:
         """Run comprehensive validation on a dataset."""
         try:
-            logger.info("Starting validation", dataset_id=dataset.id, name=dataset.name)
+            logger.info("Starting validation", dataset_id = dataset.id, name = dataset.name)
 
             # Sample data from data warehouse
             sample_data = await self._sample_data(dataset, db)
 
             if sample_data is None or sample_data.empty:
-                logger.warning("No data found for validation", dataset_id=dataset.id)
+                logger.warning("No data found for validation", dataset_id = dataset.id)
                 return {
                     "status": "completed",
                     "health_score": 0.0,
@@ -61,9 +60,7 @@ class ValidationService:
 
             logger.info(
                 "Validation completed",
-                dataset_id=dataset.id,
-                health_score=health_score,
-                anomaly_count=len(anomalies),
+                health_score = health_score,
             )
 
             return {
@@ -79,7 +76,7 @@ class ValidationService:
             }
 
         except Exception as e:
-            logger.error("Validation failed", dataset_id=dataset.id, error=str(e))
+            logger.error("Validation failed", dataset_id = dataset.id, error = str(e))
             return {
                 "status": "failed",
                 "health_score": 0.0,
@@ -92,8 +89,8 @@ class ValidationService:
     ) -> Optional[pd.DataFrame]:
         """Sample data from either parquet file or SQL table."""
         try:
-            print(f"Dataset source: {dataset.source}")
-            print(f"Dataset name: {dataset.name}")
+            print("Dataset source: {dataset.source}")
+            print("Dataset name: {dataset.name}")
 
             # Check if source is a parquet file
             if dataset.source and dataset.source.endswith(".parquet"):
@@ -103,8 +100,8 @@ class ValidationService:
             return await self._sample_from_sql(dataset, db)
 
         except Exception as e:
-            logger.error("Failed to sample data", dataset_id=dataset.id, error=str(e))
-            print(f"Error sampling data: {e}")
+            logger.error("Failed to sample data", dataset_id = dataset.id, error = str(e))
+            print("Error sampling data: {e}")
             return self._create_mock_data()
 
     async def _sample_from_parquet(self, dataset: Dataset) -> Optional[pd.DataFrame]:
@@ -115,21 +112,21 @@ class ValidationService:
             source_path = Path(dataset.source)
 
             if not source_path.exists():
-                logger.warning("Parquet file not found", source=dataset.source)
-                print(f"File not found: {source_path.absolute()}")
+                logger.warning("Parquet file not found", source = dataset.source)
+                print("File not found: {source_path.absolute()}")
                 return None
 
             sample_data = pd.read_parquet(dataset.source)
             print(
-                f"Successfully read {len(sample_data)} rows from parquet: {dataset.source}"
+                "Successfully read {len(sample_data)} rows from parquet: {dataset.source}"
             )
             return sample_data
 
         except Exception as e:
             logger.error(
-                "Failed to read parquet file", source=dataset.source, error=str(e)
+                "Failed to read parquet file", source = dataset.source, error = str(e)
             )
-            print(f"Error reading parquet: {e}")
+            print("Error reading parquet: {e}")
             return None
 
     async def _sample_from_sql(
@@ -161,36 +158,36 @@ class ValidationService:
                     break
 
             if not actual_table_name:
-                logger.warning("No matching table found", dataset_name=dataset.name)
+                logger.warning("No matching table found", dataset_name = dataset.name)
                 print(
-                    f"No table found for dataset: {dataset.name}. Available: {table_names}"
+                    "No table found for dataset: {dataset.name}. Available: {table_names}"
                 )
                 return None
 
-            print(f"Using table: {actual_table_name}")
+            print("Using table: {actual_table_name}")
 
             # Sample data from the table
-            query = text(f"SELECT * FROM {actual_table_name} LIMIT 100")
+            query = text("SELECT * FROM {actual_table_name} LIMIT 100")
             result = db.execute(query)
 
             columns = result.keys()
             data = result.fetchall()
 
             if not data:
-                logger.warning("No data found in table", table_name=actual_table_name)
+                logger.warning("No data found in table", table_name = actual_table_name)
                 return None
 
-            df = pd.DataFrame(data, columns=columns)
+            df = pd.DataFrame(data, columns = columns)
             print(
-                f"Successfully sampled {len(df)} rows from table: {actual_table_name}"
+                "Successfully sampled {len(df)} rows from table: {actual_table_name}"
             )
             return df
 
         except Exception as e:
             logger.error(
-                "Failed to sample from SQL", dataset_id=dataset.id, error=str(e)
+                "Failed to sample from SQL", dataset_id = dataset.id, error = str(e)
             )
-            print(f"Error sampling from SQL: {e}")
+            print("Error sampling from SQL: {e}")
             return None  # Fallback to mock data
 
     async def _run_validation_checks(
@@ -289,7 +286,7 @@ class ValidationService:
             return results
 
         except Exception as e:
-            logger.error("Validation checks failed", error=str(e))
+            logger.error("Validation checks failed", error = str(e))
             return []
 
     def _calculate_health_score(
@@ -318,7 +315,7 @@ class ValidationService:
             if result["passed"]:
                 score = 1.0
             else:
-                # Reduce score based on severity (1-5 scale)
+                # Reduce score based on severity (1 - 5 scale)
                 severity = result.get("severity", 1)
                 score = max(0.0, 1.0 - (severity - 1) * 0.2)
 
@@ -342,13 +339,10 @@ class ValidationService:
                 if not result["passed"] and result["severity"] >= 2:
                     # Create anomaly record
                     anomaly_data = AnomalyCreate(
-                        dataset_id=dataset.id,
-                        table_name=dataset.name,
-                        column_name=result.get("column"),
-                        issue_type=result["check_type"],
-                        severity=result["severity"],
-                        description=self._generate_anomaly_description(result),
-                        extra=result.get("extra", {}),
+                        table_name = dataset.name,
+                        severity = result["severity"],
+                        description = self._generate_anomaly_description(result),
+                        extra = result.get("extra", {}),
                     )
 
                     # Save to database
@@ -370,21 +364,21 @@ class ValidationService:
             return anomalies
 
         except Exception as e:
-            logger.error("Anomaly detection failed", error=str(e))
+            logger.error("Anomaly detection failed", error = str(e))
             return []
 
     def _generate_anomaly_description(self, result: Dict[str, Any]) -> str:
-        """Generate human-readable description for an anomaly."""
+        """Generate human - readable description for an anomaly."""
         check_type = result["check_type"]
         column = result.get("column", "unknown")
         value = result["value"]
         threshold = result["threshold"]
 
         descriptions = {
-            "null_rate": f"High null rate in column '{column}': {value:.1%} (threshold: {threshold:.1%})",
-            "type_consistency": f"Inconsistent data types in column '{column}': {value} different types found",
-            "uniqueness": f"Low uniqueness in column '{column}': {value:.1%} unique values (threshold: {threshold:.1%})",
-            "outliers": f"High outlier ratio in column '{column}': {value:.1%} (threshold: {threshold:.1%})",
+            "null_rate": "High null rate in column '{column}': {value:.1%} (threshold: {threshold:.1%})",
+            "type_consistency": "Inconsistent data types in column '{column}': {value} different types found",
+            "uniqueness": "Low uniqueness in column '{column}': {value:.1%} unique values (threshold: {threshold:.1%})",
+            "outliers": "High outlier ratio in column '{column}': {value:.1%} (threshold: {threshold:.1%})",
         }
 
-        return descriptions.get(check_type, f"Anomaly detected in column '{column}'")
+        return descriptions.get(check_type, "Anomaly detected in column '{column}'")

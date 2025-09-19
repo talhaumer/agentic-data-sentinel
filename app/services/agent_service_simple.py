@@ -15,15 +15,14 @@ from app.services.mcp_service import MCPService
 
 logger = structlog.get_logger(__name__)
 
-
 class SimpleAgentService:
     """Simplified agent service for synchronous execution."""
-    
+
     def __init__(self):
         self.validation_service = ValidationService()
         self.llm_service = LLMService()
         self.mcp_service = MCPService()
-    
+
     async def run_workflow(
         self, dataset_id: int, include_llm_explanation: bool = True
     ) -> Dict[str, Any]:
@@ -34,17 +33,17 @@ class SimpleAgentService:
             # Get dataset
             dataset = db.query(Dataset).filter(Dataset.id == dataset_id).first()
             if not dataset:
-                raise ValueError(f"Dataset {dataset_id} not found")
-            
+                raise ValueError("Dataset {dataset_id} not found")
+
             # Create a new run
             run = Run(
-                dataset_id=dataset_id, status="running", run_time=datetime.utcnow()
+                dataset_id = dataset_id, status="running", run_time = datetime.utcnow()
             )
             db.add(run)
             db.commit()
             db.refresh(run)
-            
-            logger.info("Starting agent workflow", run_id=run.id, dataset_id=dataset_id)
+
+            logger.info("Starting agent workflow", run_id = run.id, dataset_id = dataset_id)
             # Step 1: Fetch and validate data
             validation_result = await self.validation_service.validate_dataset(
                 dataset, db
@@ -55,7 +54,7 @@ class SimpleAgentService:
             # Step 3: Generate LLM explanations for anomalies
             if include_llm_explanation and anomalies:
                 await self._generate_anomaly_explanations(anomalies, db)
-            
+
             # Step 4: Plan and execute actions
             actions_taken = await self._plan_and_execute_actions(anomalies, dataset, db)
             # Step 5: Update run status and summary
@@ -68,15 +67,15 @@ class SimpleAgentService:
                 "validation_summary": validation_result.get("summary", {}),
             }
             db.commit()
-            
+
             logger.info(
                 "Agent workflow completed",
-                run_id=run.id,
-                health_score=validation_result.get("health_score", 0.0),
-                anomalies_detected=len(anomalies),
-                actions_taken=len(actions_taken),
+                run_id = run.id,
+                health_score = validation_result.get("health_score", 0.0),
+                anomalies_detected = len(anomalies),
+                actions_taken = len(actions_taken),
             )
-            
+
             return {
                 "run_id": run.id,
                 "status": "completed",
@@ -85,9 +84,9 @@ class SimpleAgentService:
                 "actions_taken": len(actions_taken),
                 "summary": run.summary,
             }
-            
+
         except Exception as e:
-            logger.error("Agent workflow failed", dataset_id=dataset_id, error=str(e))
+            logger.error("Agent workflow failed", dataset_id = dataset_id, error = str(e))
             if run:
                 run.status = "failed"
                 run.summary = {"error": str(e)}
@@ -96,21 +95,21 @@ class SimpleAgentService:
                 # If run was never created, create a failed run record
                 try:
                     failed_run = Run(
-                        dataset_id=dataset_id,
+                        dataset_id = dataset_id,
                         status="failed",
-                        run_time=datetime.utcnow(),
+                        run_time = datetime.utcnow(),
                         summary={"error": str(e)},
                     )
                     db.add(failed_run)
                     db.commit()
                 except Exception as db_error:
                     logger.error(
-                        "Failed to create failed run record", error=str(db_error)
+                        "Failed to create failed run record", error = str(db_error)
                     )
             raise
         finally:
             db.close()
-    
+
     async def _generate_anomaly_explanations(
         self, anomalies: List[Dict[str, Any]], db: Session
     ):
@@ -120,46 +119,46 @@ class SimpleAgentService:
                 anomaly_id = anomaly_info.get("id")
                 if not anomaly_id:
                     continue
-                
+
                 # Get full anomaly record
                 anomaly = db.query(Anomaly).filter(Anomaly.id == anomaly_id).first()
                 if not anomaly:
                     continue
-                
+
                 # Generate explanation
                 explanation = await self.llm_service.explain_anomaly(anomaly)
-                
+
                 # Update anomaly with explanation
                 anomaly.llm_explanation = explanation.explanation
                 anomaly.suggested_sql = explanation.suggested_sql
                 anomaly.action_taken = explanation.action_type
                 db.commit()
-                
-                logger.info("Generated explanation for anomaly", anomaly_id=anomaly_id)
-                
+
+                logger.info("Generated explanation for anomaly", anomaly_id = anomaly_id)
+
         except Exception as e:
-            logger.error("Failed to generate anomaly explanations", error=str(e))
-    
+            logger.error("Failed to generate anomaly explanations", error = str(e))
+
     async def _plan_and_execute_actions(
         self, anomalies: List[Dict[str, Any]], dataset: Dataset, db: Session
     ) -> List[Dict[str, Any]]:
         """Plan and execute actions based on anomalies."""
         actions_taken = []
-        
+
         try:
             for anomaly_info in anomalies:
                 anomaly_id = anomaly_info.get("id")
                 if not anomaly_id:
                     continue
-                
+
                 # Get full anomaly record
                 anomaly = db.query(Anomaly).filter(Anomaly.id == anomaly_id).first()
                 if not anomaly:
                     continue
-                
+
                 # Determine action based on severity and type
                 action = await self._determine_action(anomaly, dataset)
-                
+
                 if action["type"] != "no_action":
                     # Execute action or queue for approval
                     result = await self._execute_action(action, anomaly, dataset)
@@ -181,32 +180,32 @@ class SimpleAgentService:
                         if result.get("success"):
                             anomaly.status = "investigating"
                     db.commit()
-                
+
         except Exception as e:
-            logger.error("Failed to plan and execute actions", error=str(e))
-        
+            logger.error("Failed to plan and execute actions", error = str(e))
+
         return actions_taken
-    
+
     async def _determine_action(
         self, anomaly: Anomaly, dataset: Dataset
     ) -> Dict[str, Any]:
-        """Determine appropriate action for an anomaly with human-in-the-loop."""
-        # Human-in-the-loop approach - all actions require approval
+        """Determine appropriate action for an anomaly with human - in - the - loop."""
+        # Human - in - the - loop approach - all actions require approval
         if anomaly.severity >= 4:
             return {
                 "type": "pending_approval",
                 "suggested_action": "create_issue",
                 "priority": "high",
-                "assignee": dataset.owner or "data-team",
+                "assignee": dataset.owner or "data - team",
                 "reason": "High severity anomaly requires immediate attention",
                 "requires_approval": True
             }
         elif anomaly.severity >= 3:
             return {
-                "type": "pending_approval", 
+                "type": "pending_approval",
                 "suggested_action": "notify_owner",
                 "priority": "medium",
-                "recipient": dataset.owner or "data-team",
+                "recipient": dataset.owner or "data - team",
                 "reason": "Medium severity anomaly needs review",
                 "requires_approval": True
             }
@@ -215,7 +214,7 @@ class SimpleAgentService:
                 "type": "pending_approval",
                 "suggested_action": "auto_fix",
                 "priority": "low",
-                "reason": "Low severity anomaly can be auto-fixed with approval",
+                "reason": "Low severity anomaly can be auto - fixed with approval",
                 "requires_approval": True
             }
         else:
@@ -224,14 +223,14 @@ class SimpleAgentService:
                 "priority": "low",
                 "reason": "Very low severity - no action needed"
             }
-    
+
     async def _execute_action(
         self, action: Dict[str, Any], anomaly: Anomaly, dataset: Dataset
     ) -> Dict[str, Any]:
         """Execute the determined action."""
         try:
             action_type = action["type"]
-            
+
             if action_type == "pending_approval":
                 # Queue action for human approval
                 return {
@@ -247,31 +246,31 @@ class SimpleAgentService:
 
             elif action_type == "create_issue":
                 return await self.mcp_service.create_issue(
-                    title=f"Data Quality Issue: {anomaly.issue_type} in {dataset.name}",
-                    description=anomaly.description,
-                    priority=action.get("priority", "medium"),
-                    assignee=action.get("assignee"),
+                    title="Data Quality Issue: {anomaly.issue_type} in {dataset.name}",
+                    description = anomaly.description,
+                    priority = action.get("priority", "medium"),
+                    assignee = action.get("assignee"),
                 )
-            
+
             elif action_type == "notify_owner":
                 return await self.mcp_service.send_notification(
-                    channel="#data-quality",
-                    message=f"Data quality issue detected in {dataset.name}: {anomaly.description}",
-                    priority=action.get("priority", "medium"),
+                    channel="#data - quality",
+                    message="Data quality issue detected in {dataset.name}: {anomaly.description}",
+                    priority = action.get("priority", "medium"),
                 )
-            
+
             elif action_type == "auto_fix":
                 return await self._attempt_auto_fix(anomaly, dataset)
-            
+
             else:
                 return {"success": False, "message": "No action taken"}
-                
+
         except Exception as e:
             logger.error(
-                "Failed to execute action", action_type=action["type"], error=str(e)
+                "Failed to execute action", action_type = action["type"], error = str(e)
             )
             return {"success": False, "error": str(e)}
-    
+
     async def approve_action(
         self, anomaly_id: int, approved: bool, approved_by: str = "human"
     ) -> Dict[str, Any]:
@@ -288,17 +287,17 @@ class SimpleAgentService:
                 if anomaly.action_taken == "pending_approval":
                     # Get the suggested action from the anomaly's extra data or determine it
                     suggested_action = self._get_suggested_action_from_anomaly(anomaly)
-                    
+
                     if suggested_action == "create_issue":
                         result = await self.mcp_service.create_issue(
-                            title=f"Data Quality Issue: {anomaly.issue_type}",
-                            description=anomaly.description,
+                            title="Data Quality Issue: {anomaly.issue_type}",
+                            description = anomaly.description,
                             priority="high" if anomaly.severity >= 4 else "medium",
                         )
                     elif suggested_action == "notify_owner":
                         result = await self.mcp_service.send_notification(
-                            channel="#data-quality",
-                            message=f"Data quality issue detected: {anomaly.description}",
+                            channel="#data - quality",
+                            message="Data quality issue detected: {anomaly.description}",
                             priority="high" if anomaly.severity >= 4 else "medium",
                         )
                     elif suggested_action == "auto_fix":
@@ -308,19 +307,19 @@ class SimpleAgentService:
 
                     # Update anomaly status
                     anomaly.status = "resolved" if result.get("success") else "investigating"
-                    anomaly.action_taken = f"approved_{suggested_action}"
+                    anomaly.action_taken = "approved_{suggested_action}"
                     db.commit()
 
                     logger.info(
                         "Action approved and executed",
-                        anomaly_id=anomaly_id,
-                        approved_by=approved_by,
-                        action=suggested_action
+                        anomaly_id = anomaly_id,
+                        approved_by = approved_by,
+                        action = suggested_action
                     )
 
                     return {
                         "success": True,
-                        "message": f"Action approved and executed: {suggested_action}",
+                        "message": "Action approved and executed: {suggested_action}",
                         "result": result
                     }
             else:
@@ -331,8 +330,7 @@ class SimpleAgentService:
 
                 logger.info(
                     "Action rejected",
-                    anomaly_id=anomaly_id,
-                    rejected_by=approved_by
+                    anomaly_id = anomaly_id,
                 )
 
                 return {
@@ -342,7 +340,7 @@ class SimpleAgentService:
                 }
 
         except Exception as e:
-            logger.error("Failed to process approval", anomaly_id=anomaly_id, error=str(e))
+            logger.error("Failed to process approval", anomaly_id = anomaly_id, error = str(e))
             return {"success": False, "error": str(e)}
         finally:
             db.close()
@@ -365,18 +363,18 @@ class SimpleAgentService:
         """Attempt to automatically fix an anomaly."""
         try:
             logger.info(
-                "Auto-fix attempted",
-                anomaly_id=anomaly.id,
-                issue_type=anomaly.issue_type,
-                suggested_sql=anomaly.suggested_sql,
+                "Auto - fix attempted",
+                anomaly_id = anomaly.id,
+                issue_type = anomaly.issue_type,
+                suggested_sql = anomaly.suggested_sql,
             )
-            
+
             return {
                 "success": True,
-                "message": "Auto-fix attempted (placeholder implementation)",
+                "message": "Auto - fix attempted (placeholder implementation)",
                 "suggested_sql": anomaly.suggested_sql,
             }
-            
+
         except Exception as e:
-            logger.error("Auto-fix failed", anomaly_id=anomaly.id, error=str(e))
+            logger.error("Auto - fix failed", anomaly_id = anomaly.id, error = str(e))
             return {"success": False, "error": str(e)}

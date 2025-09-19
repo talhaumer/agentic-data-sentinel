@@ -17,16 +17,14 @@ logger = structlog.get_logger(__name__)
 router = APIRouter()
 settings = get_settings()
 
-
 async def check_database(db: Session) -> str:
     """Check database connectivity."""
     try:
         db.execute(text("SELECT 1"))
         return "connected"
     except Exception as e:
-        logger.error("Database health check failed", error=str(e))
+        logger.error("Database health check failed", error = str(e))
         return "disconnected"
-
 
 async def check_redis() -> str:
     """Check Redis connectivity."""
@@ -35,9 +33,8 @@ async def check_redis() -> str:
         r.ping()
         return "connected"
     except Exception as e:
-        logger.error("Redis health check failed", error=str(e))
+        logger.error("Redis health check failed", error = str(e))
         return "disconnected"
-
 
 async def check_llm() -> str:
     """Check LLM service connectivity."""
@@ -47,8 +44,8 @@ async def check_llm() -> str:
         # Check if API key is configured
         if (
             not settings.llm_api_key
-            or settings.llm_api_key == "sk-your-openai-api-key-here"
-            or settings.llm_api_key == "gsk_your-groq-api-key-here"
+            or settings.llm_api_key == "sk - your - openai - api - key - here"
+            or settings.llm_api_key == "gsk_your - groq - api - key - here"
         ):
             return "disconnected"
 
@@ -59,11 +56,10 @@ async def check_llm() -> str:
 
         return "connected"
     except Exception as e:
-        logger.error("LLM health check failed", error=str(e))
+        logger.error("LLM health check failed", error = str(e))
         return "disconnected"
 
-
-@router.get("/", response_model=HealthCheck)
+@router.get("/", response_model = HealthCheck)
 async def health_check(db: Session = Depends(get_db)):
     """Comprehensive health check endpoint."""
     try:
@@ -84,18 +80,16 @@ async def health_check(db: Session = Depends(get_db)):
         )
 
         return HealthCheck(
-            status=overall_status,
-            timestamp=datetime.utcnow(),
+            status = overall_status,
             version="0.1.0",
-            database=db_status,
-            redis=redis_status,
-            llm=llm_status,
+            database = db_status,
+            redis = redis_status,
+            llm = llm_status,
         )
 
     except Exception as e:
-        logger.error("Health check failed", error=str(e))
-        raise HTTPException(status_code=503, detail="Health check failed")
-
+        logger.error("Health check failed", error = str(e))
+        raise HTTPException(status_code = 503, detail="Health check failed")
 
 @router.get("/ready")
 async def readiness_check(db: Session = Depends(get_db)):
@@ -108,12 +102,11 @@ async def readiness_check(db: Session = Depends(get_db)):
         if db_status == "connected" and redis_status == "connected":
             return {"status": "ready"}
         else:
-            raise HTTPException(status_code=503, detail="Service not ready")
+            raise HTTPException(status_code = 503, detail="Service not ready")
 
     except Exception as e:
-        logger.error("Readiness check failed", error=str(e))
-        raise HTTPException(status_code=503, detail="Service not ready")
-
+        logger.error("Readiness check failed", error = str(e))
+        raise HTTPException(status_code = 503, detail="Service not ready")
 
 @router.get("/live")
 async def liveness_check():

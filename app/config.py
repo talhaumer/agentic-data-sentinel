@@ -6,7 +6,6 @@ from typing import Optional
 from pydantic import Field
 from pydantic_settings import BaseSettings
 
-
 class Settings(BaseSettings):
     """Application settings loaded from environment variables."""
 
@@ -20,7 +19,7 @@ class Settings(BaseSettings):
     # LLM Configuration
     llm_api_key: str = Field(..., env="LLM_API_KEY")
     llm_provider: str = Field("openai", env="LLM_PROVIDER")  # openai or groq
-    llm_model: str = Field("gpt-4", env="LLM_MODEL")
+    llm_model: str = Field("gpt - 4", env="LLM_MODEL")
 
     # Authentication
     secret_key: str = Field(..., env="SECRET_KEY")
@@ -49,9 +48,6 @@ class Settings(BaseSettings):
     health_score_threshold: float = Field(0.8, env="HEALTH_SCORE_THRESHOLD")
 
     class Config:
-        env_file = ".env"
-        case_sensitive = False
-
 
 @lru_cache()
 def get_settings() -> Settings:
