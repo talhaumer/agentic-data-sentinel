@@ -22,7 +22,7 @@ st.set_page_config(
 )
 
 # API base URL
-    API_BASE_URL = "http://localhost:8000/api/v1"  # noqa: E501
+API_BASE_URL = "http://localhost:8000/api/v1"  # noqa: E501
 
 # Enhanced Custom CSS
 st.markdown(
@@ -498,6 +498,7 @@ def show_anomalies():
         severity_filter = st.selectbox("Min Severity", [1, 2, 3, 4, 5])
 
     with col3:
+        dataset_filter = st.selectbox("Dataset", ["All"])
 
     # Get anomalies
     try:
@@ -730,14 +731,18 @@ def show_agent_workflows():
             with st.expander("Advanced Options"):
                 col1, col2 = st.columns(2)
                 with col1:
+                    validation_rules = st.multiselect(
                         "Validation Rules",
                         ["null_check", "uniqueness", "range_check", "pattern_match"],
                         default=["null_check", "uniqueness"],
                         help="Select specific validation rules to apply"
                     )
                 with col2:
+                    sample_size = st.number_input(
                         "Sample Size",
-                        value = 1000,
+                        min_value=100,
+                        max_value=10000,
+                        value=1000,
                         help="Number of rows to sample for validation"
                     )
 
