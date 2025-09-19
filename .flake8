@@ -1,0 +1,33 @@
+[flake8]
+max-line-length = 79
+exclude = 
+    .git,
+    __pycache__,
+    .venv,
+    venv,
+    .pytest_cache,
+    .mypy_cache,
+    build,
+    dist,
+    *.egg-info,
+    migrations,
+    node_modules
+ignore = 
+    E501,  # line too long
+    W291,  # trailing whitespace
+    W293,  # blank line contains whitespace
+    E302,  # expected 2 blank lines
+    E128,  # continuation line under-indented
+    F401,  # imported but unused
+    F841,  # local variable assigned but never used
+    E722,  # do not use bare 'except'
+    F541,  # f-string is missing placeholders
+    E225,  # missing whitespace around operator
+per-file-ignores =
+    # Ignore all errors in specific files
+    app/frontend/streamlit_main.py:E501,W291,W293,E302,F401,F841,E722,F541,E225
+    # Ignore specific errors in test files
+    tests/*:F401,F841
+    # Ignore line length in specific files
+    app/services/llm_service.py:E501
+    app/services/validation_service.py:E501
