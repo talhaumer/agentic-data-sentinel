@@ -42,14 +42,22 @@ async def check_redis() -> str:
 async def check_llm() -> str:
     """Check LLM service connectivity."""
     try:
-        # This would be a simple API call to the LLM service
-        # For now, we'll just check if the API key is configured
+        from app.services.llm_service import LLMService
+        
+        # Check if API key is configured
         if (
-            settings.llm_api_key
-            and settings.llm_api_key != "sk-your-openai-api-key-here"
+            not settings.llm_api_key
+            or settings.llm_api_key == "sk-your-openai-api-key-here"
+            or settings.llm_api_key == "gsk_your-groq-api-key-here"
         ):
-            return "connected"
-        return "disconnected"
+            return "disconnected"
+        
+        # Test LLM service initialization
+        llm_service = LLMService()
+        if not llm_service.llm_available:
+            return "disconnected"
+            
+        return "connected"
     except Exception as e:
         logger.error("LLM health check failed", error=str(e))
         return "disconnected"
