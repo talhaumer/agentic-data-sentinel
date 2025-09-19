@@ -1,28 +1,30 @@
 {
-  "name": "data-sentinel-v1",
+  "name": "agentic-data-sentinel",
   "version": "1.0.0",
   "description": "AI-powered data quality monitoring and anomaly detection",
-  "main": "vercel_main.py",
+  "main": "api/index.py",
   "scripts": {
-    "dev": "vercel dev",
-    "build": "vercel build",
     "deploy": "vercel --prod",
-    "preview": "vercel"
+    "dev": "vercel dev",
+    "build": "vercel build"
   },
-  "keywords": [
-    "data-quality",
-    "anomaly-detection",
-    "ai",
-    "monitoring",
-    "fastapi",
-    "vercel"
-  ],
-  "author": "Data Sentinel Team",
-  "license": "MIT",
   "devDependencies": {
     "vercel": "^32.0.0"
   },
   "engines": {
     "node": ">=18.0.0"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-username/agentic-data-sentinel.git"
+  },
+  "keywords": [
+    "data-quality",
+    "anomaly-detection",
+    "ai",
+    "fastapi",
+    "vercel"
+  ],
+  "author": "Your Name",
+  "license": "MIT"
 }
