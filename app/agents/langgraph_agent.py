@@ -6,6 +6,7 @@ from datetime import datetime
 import structlog
 from langgraph.graph import StateGraph, END
 
+from app.config import get_settings
 from app.models import Dataset, Anomaly
 from app.services.validation_service import ValidationService
 from app.services.llm_service import LLMService
