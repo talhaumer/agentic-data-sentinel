@@ -59,3 +59,6 @@ data/
 *.csv
 *.json
 *.xlsx
+
+# Full requirements (use requirements.txt for Vercel)
+requirements-full.txt
