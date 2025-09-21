@@ -32,6 +32,20 @@ class Settings(BaseSettings):
     jira_base_url: Optional[str] = Field(None, env="JIRA_BASE_URL")
     jira_username: Optional[str] = Field(None, env="JIRA_USERNAME")
     jira_api_token: Optional[str] = Field(None, env="JIRA_API_TOKEN")
+    
+    # GitHub Integration
+    github_token: Optional[str] = Field(None, env="GITHUB_TOKEN")
+    github_owner: Optional[str] = Field(None, env="GITHUB_OWNER")
+    github_repo: Optional[str] = Field(None, env="GITHUB_REPO")
+    
+    # Email Integration
+    sendgrid_api_key: Optional[str] = Field(None, env="SENDGRID_API_KEY")
+    from_email: Optional[str] = Field(None, env="FROM_EMAIL")
+    
+    # Observability
+    jaeger_agent_host: str = Field("localhost", env="JAEGER_AGENT_HOST")
+    jaeger_agent_port: int = Field(14268, env="JAEGER_AGENT_PORT")
+    environment: str = Field("development", env="ENVIRONMENT")
 
     # Application Settings
     debug: bool = Field(False, env="DEBUG")

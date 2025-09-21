@@ -227,6 +227,27 @@ class LLMExplanationResponse(BaseSchema):
     )
 
 
+# External API schemas
+class NotificationRequest(BaseSchema):
+    """Schema for notification request."""
+    
+    channel: str = Field(..., min_length=1, max_length=255)
+    message: str = Field(..., min_length=1, max_length=2000)
+    priority: str = Field("medium", pattern="^(low|medium|high|critical)$")
+    platform: str = Field("slack", pattern="^(slack|email)$")
+
+
+class IssueRequest(BaseSchema):
+    """Schema for issue creation request."""
+    
+    title: str = Field(..., min_length=1, max_length=255)
+    description: str = Field(..., min_length=1, max_length=5000)
+    priority: str = Field("medium", pattern="^(low|medium|high|critical)$")
+    platform: str = Field("jira", pattern="^(jira|github)$")
+    assignee: Optional[str] = Field(None, max_length=255)
+    labels: Optional[list] = Field(None)
+
+
 class AgentWorkflowRequest(BaseSchema):
     """Request schema for triggering agent workflow."""
 

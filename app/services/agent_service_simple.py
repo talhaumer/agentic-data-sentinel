@@ -11,6 +11,8 @@ from app.models import Dataset, Run, Anomaly
 from app.services.validation_service import ValidationService
 from app.services.llm_service import LLMService
 from app.services.mcp_service import MCPService
+from app.agents.langgraph_agent import DataQualityAgent
+from app.observability.metrics import MetricsCollector
 
 logger = structlog.get_logger(__name__)
 
@@ -22,13 +24,17 @@ class SimpleAgentService:
         self.validation_service = ValidationService()
         self.llm_service = LLMService()
         self.mcp_service = MCPService()
+        self.langgraph_agent = DataQualityAgent()
+        self.metrics = MetricsCollector()
 
     async def run_workflow(
         self, dataset_id: int, include_llm_explanation: bool = True
     ) -> Dict[str, Any]:
-        """Run the complete agent workflow for a dataset synchronously."""
+        """Run the complete agent workflow for a dataset using LangGraph."""
+        start_time = datetime.utcnow()
         db = SessionLocal()
-        run = None  # Initialize run variable
+        run = None
+        
         try:
             # Get dataset
             dataset = db.query(Dataset).filter(Dataset.id == dataset_id).first()
@@ -37,59 +43,77 @@ class SimpleAgentService:
 
             # Create a new run
             run = Run(
-                dataset_id=dataset_id, status="running", run_time=datetime.utcnow()
+                dataset_id=dataset_id, status="running", run_time=start_time
             )
             db.add(run)
             db.commit()
             db.refresh(run)
 
-            logger.info("Starting agent workflow", run_id=run.id, dataset_id=dataset_id)
-            # Step 1: Fetch and validate data
-            validation_result = await self.validation_service.validate_dataset(
-                dataset, db
+            logger.info("Starting LangGraph agent workflow", run_id=run.id, dataset_id=dataset_id)
+            
+            # Run LangGraph agent workflow
+            result = await self.langgraph_agent.run_workflow(dataset_id)
+            
+            # Calculate duration
+            duration = (datetime.utcnow() - start_time).total_seconds()
+            
+            # Record metrics
+            self.metrics.record_workflow(
+                dataset_id=dataset_id,
+                status=result.get("status", "failed"),
+                duration=duration
             )
-            # Step 2: Analyze results and detect anomalies
-            anomalies = validation_result.get("anomalies", [])
-
-            # Step 3: Generate LLM explanations for anomalies
-            if include_llm_explanation and anomalies:
-                await self._generate_anomaly_explanations(anomalies, db)
-
-            # Step 4: Plan and execute actions
-            actions_taken = await self._plan_and_execute_actions(anomalies, dataset, db)
-            # Step 5: Update run status and summary
-            run.status = "completed"
-            run.duration_seconds = (datetime.utcnow() - run.run_time).total_seconds()
+            
+            if result.get("health_score"):
+                self.metrics.record_health_score(dataset_id, result["health_score"])
+            
+            # Update run status and summary
+            run.status = result.get("status", "failed")
+            run.duration_seconds = duration
             run.summary = {
-                "health_score": validation_result.get("health_score", 0.0),
-                "anomalies_detected": len(anomalies),
-                "actions_taken": actions_taken,
-                "validation_summary": validation_result.get("summary", {}),
+                "health_score": result.get("health_score", 0.0),
+                "anomalies_detected": result.get("anomalies_detected", 0),
+                "actions_executed": result.get("actions_executed", 0),
+                "error": result.get("error"),
+                "agent_type": "langgraph"
             }
             db.commit()
 
             logger.info(
-                "Agent workflow completed",
+                "LangGraph agent workflow completed",
                 run_id=run.id,
-                health_score=validation_result.get("health_score", 0.0),
-                anomalies_detected=len(anomalies),
-                actions_taken=len(actions_taken),
+                status=result.get("status"),
+                health_score=result.get("health_score", 0.0),
+                anomalies_detected=result.get("anomalies_detected", 0),
+                actions_executed=result.get("actions_executed", 0),
             )
 
             return {
                 "run_id": run.id,
-                "status": "completed",
-                "health_score": validation_result.get("health_score", 0.0),
-                "anomalies_detected": len(anomalies),
-                "actions_taken": len(actions_taken),
+                "status": result.get("status", "failed"),
+                "health_score": result.get("health_score", 0.0),
+                "anomalies_detected": result.get("anomalies_detected", 0),
+                "actions_executed": result.get("actions_executed", 0),
                 "summary": run.summary,
+                "duration_seconds": duration,
+                "agent_type": "langgraph"
             }
 
         except Exception as e:
-            logger.error("Agent workflow failed", dataset_id=dataset_id, error=str(e))
+            duration = (datetime.utcnow() - start_time).total_seconds()
+            logger.error("LangGraph agent workflow failed", dataset_id=dataset_id, error=str(e))
+            
+            # Record failed workflow metrics
+            self.metrics.record_workflow(
+                dataset_id=dataset_id,
+                status="failed",
+                duration=duration
+            )
+            
             if run:
                 run.status = "failed"
-                run.summary = {"error": str(e)}
+                run.duration_seconds = duration
+                run.summary = {"error": str(e), "agent_type": "langgraph"}
                 db.commit()
             else:
                 # If run was never created, create a failed run record
@@ -97,8 +121,9 @@ class SimpleAgentService:
                     failed_run = Run(
                         dataset_id=dataset_id,
                         status="failed",
-                        run_time=datetime.utcnow(),
-                        summary={"error": str(e)},
+                        run_time=start_time,
+                        duration_seconds=duration,
+                        summary={"error": str(e), "agent_type": "langgraph"},
                     )
                     db.add(failed_run)
                     db.commit()
