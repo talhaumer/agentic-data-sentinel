@@ -21,7 +21,10 @@
   ],
   "env": {
     "PYTHONPATH": ".",
-    "DATABASE_URL": "sqlite:///./data/sentinel.db"
+    "DATABASE_URL": "sqlite:///./data/sentinel.db",
+    "LLM_PROVIDER": "groq",
+    "GROQ_API_KEY": "",
+    "SECRET_KEY": ""
   },
   "functions": {
     "api/index.py": {
