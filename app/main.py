@@ -7,7 +7,6 @@ import structlog
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.middleware.trustedhost import TrustedHostMiddleware
-from prometheus_client import make_asgi_app
 
 from app.api.v1.api import api_router
 from app.config import get_settings
@@ -15,7 +14,7 @@ from app.database import engine
 from app.models import Base
 from app.middleware.logging import LoggingMiddleware
 from app.observability.tracing import setup_tracing
-from app.observability.metrics import registry
+from app.observability.metrics import MetricsCollector
 
 # from app.middleware.metrics import MetricsMiddleware
 
@@ -48,8 +47,12 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     logger.info("Starting Data Sentinel application")
 
     # Setup observability
-    setup_tracing()
-    logger.info("Observability setup completed")
+    try:
+        setup_tracing()
+        logger.info("Observability setup completed")
+    except Exception as e:
+        logger.warning(f"Observability setup failed: {e}")
+        logger.info("Continuing without observability...")
 
     # Create database tables
     Base.metadata.create_all(bind=engine)
@@ -97,9 +100,11 @@ def create_application() -> FastAPI:
     # Include API router
     app.include_router(api_router, prefix="/api/v1")
 
-    # Add Prometheus metrics endpoint
-    metrics_app = make_asgi_app(registry=registry)
-    app.mount("/metrics", metrics_app)
+    # Add simple metrics endpoint
+    @app.get("/metrics")
+    async def get_metrics():
+        """Get application metrics."""
+        return MetricsCollector.get_metrics()
 
     return app
 

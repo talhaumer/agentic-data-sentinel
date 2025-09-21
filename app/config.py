@@ -42,9 +42,10 @@ class Settings(BaseSettings):
     sendgrid_api_key: Optional[str] = Field(None, env="SENDGRID_API_KEY")
     from_email: Optional[str] = Field(None, env="FROM_EMAIL")
     
-    # Observability
-    jaeger_agent_host: str = Field("localhost", env="JAEGER_AGENT_HOST")
-    jaeger_agent_port: int = Field(14268, env="JAEGER_AGENT_PORT")
+    # LangChain Tracing
+    langchain_api_key: Optional[str] = Field(None, env="LANGCHAIN_API_KEY")
+    langchain_tracing_v2: bool = Field(True, env="LANGCHAIN_TRACING_V2")
+    langchain_project: str = Field("data-sentinel", env="LANGCHAIN_PROJECT")
     environment: str = Field("development", env="ENVIRONMENT")
 
     # Application Settings

@@ -1,45 +1,61 @@
-"""OpenTelemetry tracing configuration."""
+"""LangChain observability configuration for LangGraph agents."""
 
 import os
-from opentelemetry import trace
-from opentelemetry.sdk.trace import TracerProvider
-from opentelemetry.sdk.trace.export import BatchSpanProcessor
-from opentelemetry.exporter.jaeger.thrift import JaegerExporter
-from opentelemetry.exporter.prometheus import PrometheusMetricReader
-from opentelemetry.sdk.resources import Resource
-from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
-from opentelemetry.instrumentation.sqlalchemy import SQLAlchemyInstrumentor
-from opentelemetry.instrumentation.requests import RequestsInstrumentor
+from typing import Optional
+from langsmith import Client
+from langchain_core.tracers import LangChainTracer
+from langchain_core.callbacks import BaseCallbackHandler
+
+# Global LangSmith client
+_langsmith_client: Optional[Client] = None
 
 def setup_tracing():
-    """Setup OpenTelemetry tracing."""
-    # Create resource
-    resource = Resource.create({
-        "service.name": "data-sentinel",
-        "service.version": "1.0.0",
-        "deployment.environment": os.getenv("ENVIRONMENT", "development")
-    })
+    """Setup LangChain tracing with LangSmith."""
+    global _langsmith_client
     
-    # Create tracer provider
-    trace.set_tracer_provider(TracerProvider(resource=resource))
-    
-    # Add Jaeger exporter
-    jaeger_exporter = JaegerExporter(
-        agent_host_name=os.getenv("JAEGER_AGENT_HOST", "localhost"),
-        agent_port=int(os.getenv("JAEGER_AGENT_PORT", "14268")),
-    )
-    
-    # Add span processor
-    span_processor = BatchSpanProcessor(jaeger_exporter)
-    trace.get_tracer_provider().add_span_processor(span_processor)
-    
-    # Instrument libraries
-    FastAPIInstrumentor.instrument()
-    SQLAlchemyInstrumentor().instrument()
-    RequestsInstrumentor().instrument()
-    
-    return trace.get_tracer(__name__)
+    try:
+        # Initialize LangSmith client
+        api_key = os.getenv("LANGCHAIN_API_KEY", "")
+        if api_key:
+            _langsmith_client = Client(api_key=api_key)
+            print("✅ LangSmith tracing initialized successfully")
+            return _langsmith_client
+        else:
+            print("⚠️ LANGCHAIN_API_KEY not found, continuing without tracing...")
+            return None
+        
+    except Exception as e:
+        print(f"⚠️ LangSmith initialization failed: {e}")
+        print("Continuing without tracing...")
+        return None
 
 def get_tracer(name: str):
     """Get a tracer instance."""
-    return trace.get_tracer(name)
+    global _langsmith_client
+    if _langsmith_client:
+        return LangChainTracer(project_name="data-sentinel")
+    else:
+        # Return a no-op tracer if LangSmith is not available
+        return NoOpTracer()
+
+class NoOpTracer:
+    """No-op tracer for when LangSmith is not available."""
+    
+    def start_as_current_span(self, name: str, **kwargs):
+        """No-op span context manager."""
+        return NoOpSpan()
+
+class NoOpSpan:
+    """No-op span for when tracing is disabled."""
+    
+    def __enter__(self):
+        return self
+    
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        pass
+    
+    def set_attribute(self, key: str, value):
+        pass
+    
+    def record_exception(self, exception):
+        pass
