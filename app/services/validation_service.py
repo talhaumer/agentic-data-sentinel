@@ -96,9 +96,12 @@ class ValidationService:
             print(f"Dataset source: {dataset.source}")
             print(f"Dataset name: {dataset.name}")
 
+            # Parse source URL to extract file path
+            file_path = self._parse_source_path(dataset.source)
+            
             # Check if source is a parquet file
-            if dataset.source and dataset.source.endswith(".parquet"):
-                return await self._sample_from_parquet(dataset)
+            if file_path and file_path.endswith(".parquet"):
+                return await self._sample_from_parquet(dataset, file_path)
 
             # Otherwise try to find a SQL table
             return await self._sample_from_sql(dataset, db)
@@ -107,20 +110,44 @@ class ValidationService:
             logger.error("Failed to sample data", dataset_id=dataset.id, error=str(e))
             print(f"Error sampling data: {e}")
             return self._create_mock_data()
+    
+    def _parse_source_path(self, source: str) -> str:
+        """Parse source URL to extract file path."""
+        if not source:
+            return ""
+            
+        # Handle file:// URLs
+        if source.startswith("file://"):
+            # Remove file:// prefix and query parameters
+            path = source[7:]  # Remove "file://"
+            if "?" in path:
+                path = path.split("?")[0]  # Remove query parameters
+            return path
+        
+        # Handle direct file paths
+        if source.endswith((".parquet", ".csv", ".json", ".xlsx")):
+            return source
+            
+        return source
 
-    async def _sample_from_parquet(self, dataset: Dataset) -> Optional[pd.DataFrame]:
+    async def _sample_from_parquet(self, dataset: Dataset, file_path: str = None) -> Optional[pd.DataFrame]:
         """Sample data from parquet file."""
         try:
             from pathlib import Path
 
-            source_path = Path(dataset.source)
+            # Use provided file_path or fall back to dataset.source
+            actual_path = file_path or dataset.source
+            source_path = Path(actual_path)
+            print(f"Source path: {source_path}")
 
             if not source_path.exists():
-                logger.warning("Parquet file not found", source=dataset.source)
+                logger.warning("Parquet file not found", source=actual_path)
                 print(f"File not found: {source_path.absolute()}")
                 return None
 
-            sample_data = pd.read_parquet(dataset.source)
+            sample_data = pd.read_parquet(actual_path)
+
+            print(f"Sample data: {sample_data.head()}")
             print(
                 f"Successfully read {len(sample_data)} rows from parquet: {dataset.source}"
             )

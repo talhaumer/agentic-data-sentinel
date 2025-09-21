@@ -157,7 +157,8 @@ def get_status_indicator(status: str) -> str:
         "pending_approval": "status-warning"
     }
     css_class = status_map.get(status.lower(), "status-unknown")
-    return f'<span class="status-indicator {css_class}"></span>'
+    return f"""<span class="status-indicator {css_class}"></span>"""
+
 
 def create_metric_card(title: str, value: Any, delta: str = None, card_type: str = "metric") -> str:
     """Create a metric card HTML."""
@@ -196,12 +197,12 @@ def main():
         health_data = fetch_data("health/")
         if health_data:
             st.sidebar.markdown("## 🏥 System Status")
-            st.sidebar.markdown(f"**API:** {get_status_indicator(health_data.get('status', 'unknown'))} {health_data.get('status', 'Unknown')}")
-            st.sidebar.markdown(f"**Database:** {get_status_indicator(health_data.get('database', 'unknown'))} {health_data.get('database', 'Unknown')}")
-            st.sidebar.markdown(f"**LLM:** {get_status_indicator(health_data.get('llm', 'unknown'))} {health_data.get('llm', 'Unknown')}")
+            st.sidebar.markdown(f"**API:** {get_status_indicator(health_data.get('status', 'unknown'))} {health_data.get('status', 'Unknown')}", unsafe_allow_html=True)
+            st.sidebar.markdown(f"**Database:** {get_status_indicator(health_data.get('database', 'unknown'))} {health_data.get('database', 'Unknown')}", unsafe_allow_html=True)
+            st.sidebar.markdown(f"**LLM:** {get_status_indicator(health_data.get('llm', 'unknown'))} {health_data.get('llm', 'Unknown')}", unsafe_allow_html=True)
     except:
         st.sidebar.markdown("## 🏥 System Status")
-        st.sidebar.error("Unable to connect to API")
+        st.sidebar.error("Unable to connect to API", unsafe_allow_html=True)
 
     # Route to appropriate page
     if "Overview" in page:
@@ -429,25 +430,117 @@ def show_datasets():
     st.header("📁 Dataset Management")
 
     # Add new dataset
-    with st.expander("Add New Dataset"):
+    with st.expander("Add New Dataset", expanded=True):
         with st.form("add_dataset"):
-            name = st.text_input("Dataset Name")
-            owner = st.text_input("Owner")
-            source = st.text_input("Source")
-
-            if st.form_submit_button("Add Dataset"):
-                try:
-                    response = requests.post(
-                        f"{API_BASE_URL}/datasets/",
-                        json={"name": name, "owner": owner, "source": source},
+            col1, col2 = st.columns(2)
+            
+            with col1:
+                name = st.text_input("Dataset Name", placeholder="e.g., sample_events")
+                owner = st.text_input("Owner", placeholder="e.g., data_team")
+                
+            with col2:
+                source_type = st.selectbox(
+                    "Source Type", 
+                    ["File", "Database", "API", "Other"],
+                    help="Select the type of data source"
+                )
+                
+                if source_type == "File":
+                    file_path = st.text_input(
+                        "File Path", 
+                        placeholder="/app/data/sample_events.parquet",
+                        help="Path to the data file (use /app/data/ for mounted files)"
                     )
-                    if response.status_code == 201:
-                        st.success("Dataset added successfully!")
-                        st.rerun()
-                    else:
-                        st.error(f"Failed to add dataset: {response.text}")
-                except Exception as e:
-                    st.error(f"Error: {e}")
+                    file_format = st.selectbox(
+                        "File Format",
+                        ["parquet", "csv", "json", "xlsx"],
+                        help="Format of the data file"
+                    )
+                    source = f"file://{file_path}?format={file_format}"
+                    
+                elif source_type == "Database":
+                    db_connection = st.text_input(
+                        "Database Connection",
+                        placeholder="sqlite:///./data/dw.db",
+                        help="Database connection string"
+                    )
+                    table_name = st.text_input(
+                        "Table Name",
+                        placeholder="events",
+                        help="Name of the table to monitor"
+                    )
+                    source = f"db://{db_connection}?table={table_name}"
+                    
+                elif source_type == "API":
+                    api_url = st.text_input(
+                        "API URL",
+                        placeholder="https://api.example.com/data",
+                        help="API endpoint URL"
+                    )
+                    source = f"api://{api_url}"
+                    
+                else:
+                    source = st.text_input(
+                        "Source Description",
+                        placeholder="Custom data source description"
+                    )
+
+            # Advanced options
+            with st.expander("Advanced Options"):
+                col1, col2 = st.columns(2)
+                with col1:
+                    sample_size = st.number_input(
+                        "Sample Size",
+                        min_value=100,
+                        max_value=100000,
+                        value=1000,
+                        help="Number of rows to sample for validation"
+                    )
+                with col2:
+                    validation_frequency = st.selectbox(
+                        "Validation Frequency",
+                        ["hourly", "daily", "weekly", "manual"],
+                        help="How often to run validation checks"
+                    )
+
+            if st.form_submit_button("Add Dataset", use_container_width=True):
+                if not name:
+                    st.error("Please enter a dataset name")
+                elif source_type == "File" and not file_path:
+                    st.error("Please enter a file path")
+                elif source_type == "Database" and (not db_connection or not table_name):
+                    st.error("Please enter database connection and table name")
+                elif source_type == "API" and not api_url:
+                    st.error("Please enter an API URL")
+                else:
+                    try:
+                        # Create the dataset payload
+                        dataset_payload = {
+                            "name": name,
+                            "owner": owner,
+                            "source": source
+                        }
+                        
+                        response = requests.post(
+                            f"{API_BASE_URL}/datasets/",
+                            json=dataset_payload,
+                        )
+                        
+                        if response.status_code == 201:
+                            st.success("✅ Dataset added successfully!")
+                            
+                            # Show next steps
+                            st.info("""
+                            **Next Steps:**
+                            1. Go to **Agent Workflows** to run quality checks
+                            2. Check **Anomalies** page for any detected issues
+                            3. View **Overview** for system health metrics
+                            """)
+                            st.rerun()
+                        else:
+                            st.error(f"❌ Failed to add dataset: {response.text}")
+                    except Exception as e:
+                        st.error(f"❌ Error: {e}")
 
     # List datasets
     try:
