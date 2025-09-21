@@ -11,12 +11,20 @@
   ],
   "routes": [
     {
+      "src": "/api/(.*)",
+      "dest": "api/index.py"
+    },
+    {
       "src": "/(.*)",
-      "dest": "/api/index.py"
+      "dest": "api/index.py"
     }
   ],
   "env": {
-    "PYTHONPATH": "."
+    "PYTHONPATH": ".",
+    "DATABASE_URL": "sqlite:///./data/sentinel.db",
+    "LLM_PROVIDER": "groq",
+    "GROQ_API_KEY": "",
+    "SECRET_KEY": ""
   },
   "functions": {
     "api/index.py": {

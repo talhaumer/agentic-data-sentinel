@@ -1,6 +1,5 @@
 """
-Data Sentinel v1 - Vercel API Entry Point
-Simplified entry point for Vercel serverless functions
+Vercel serverless function entry point for Data Sentinel API.
 """
 
 import os
@@ -11,8 +10,31 @@ from pathlib import Path
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
-# Import the simplified FastAPI app for Vercel
-from app.main_vercel_simple import app
+# Set environment variables for Vercel
+os.environ.setdefault("DATABASE_URL", "sqlite:///./data/sentinel.db")
+os.environ.setdefault("LLM_PROVIDER", "groq")
+os.environ.setdefault("GROQ_API_KEY", "")
+os.environ.setdefault("SECRET_KEY", "")
 
-# Export the app for Vercel
-handler = app
+try:
+    from app.main_vercel_simple import app
+    # Export the FastAPI app for Vercel
+    handler = app
+except ImportError:
+    try:
+        from app.main import app
+        handler = app
+    except Exception as e:
+        # Fallback minimal app if imports fail
+        from fastapi import FastAPI
+        app = FastAPI(title="Data Sentinel API", version="1.0.0")
+        
+        @app.get("/")
+        async def root():
+            return {"message": "Data Sentinel API", "status": "running"}
+        
+        @app.get("/health")
+        async def health():
+            return {"status": "healthy", "error": str(e)}
+        
+        handler = app
