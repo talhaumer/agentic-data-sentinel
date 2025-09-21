@@ -1,16 +1,16 @@
 {
   "version": 2,
   "builds": [
-    {
-      "src": "api/index.py",
-      "use": "@vercel/python",
-      "config": {
-        "runtime": "python3.11",
-        "maxLambdaSize": "50mb",
-        "includeFiles": "requirements.txt",
-        "maxDuration": 30
-      }
+  {
+    "src": "api/index.py",
+    "use": "@vercel/python",
+    "config": {
+      "runtime": "python3.11",
+      "maxLambdaSize": "50mb",
+      "includeFiles": "requirements.txt",
+      "maxDuration": 30
     }
+  }
   ],
   "routes": [
     {
