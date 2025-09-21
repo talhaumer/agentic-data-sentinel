@@ -20,8 +20,8 @@ if [ $? -eq 0 ]; then
         -e DATABASE_URL=sqlite:///./data/sentinel.db \
         -e DW_CONN_STRING=sqlite:///./data/dw.db \
         -e LLM_PROVIDER=groq \
-        -e LLM_API_KEY=REMOVED \
-        -e SECRET_KEY=your-secret-key-change-this-in-production \
+        -e LLM_API_KEY=${LLM_API_KEY} \
+        -e SECRET_KEY=${SECRET_KEY} \
         data-sentinel:latest
 else
     echo "❌ Docker build failed!"

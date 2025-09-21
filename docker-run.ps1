@@ -20,8 +20,8 @@ if ($LASTEXITCODE -eq 0) {
         -e DATABASE_URL=sqlite:////app/data/sentinel.db `
         -e DW_CONN_STRING=sqlite:///./data/dw.db `
         -e LLM_PROVIDER=groq `
-        -e LLM_API_KEY=REMOVED `
-        -e SECRET_KEY=your-secret-key-change-this-in-production `
+        -e LLM_API_KEY=${LLM_API_KEY} `
+        -e SECRET_KEY==${SECRET_KEY} `
         -e DEBUG=True `
         data-sentinel:latest
 } else {
