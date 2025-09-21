@@ -16,7 +16,6 @@ from app.middleware.logging import LoggingMiddleware
 from app.observability.tracing import setup_tracing
 from app.observability.metrics import MetricsCollector
 
-# from app.middleware.metrics import MetricsMiddleware
 
 # Configure structured logging
 structlog.configure(
@@ -95,7 +94,6 @@ def create_application() -> FastAPI:
     )
 
     app.add_middleware(LoggingMiddleware)
-    # app.add_middleware(MetricsMiddleware)
 
     # Include API router
     app.include_router(api_router, prefix="/api/v1")

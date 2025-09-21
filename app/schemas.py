@@ -262,4 +262,4 @@ class AgentWorkflowResponse(BaseSchema):
     run_id: int
     status: str
     message: str
-    estimated_duration: Optional[int] = None  # seconds
+    estimated_duration: Optional[float] = None  # seconds

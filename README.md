@@ -2,12 +2,12 @@
 
 Data Sentinel is an agentic AI platform that autonomously ensures data quality, anomaly detection, and insight generation across modern data warehouses. It uses LangGraph for orchestration, LLMs for explanations, and provides a comprehensive dashboard for monitoring and management.
 
-## 🚀 Quick Start (Simple Version)
+## 🚀 Quick Start
 
 ### Prerequisites
 
 - Python 3.10+
-- OpenAI API key (or other LLM provider)
+- LLM API key (OpenAI, Groq, or other provider)
 
 ### 1. Install Dependencies
 ```bash
@@ -16,8 +16,8 @@ pip install -r requirements.txt
 
 ### 2. Configure Environment
 ```bash
-cp env.simple .env
-# Edit .env and add your OpenAI API key
+# Create .env file with your configuration
+# See ENVIRONMENT_SETUP.md for details
 ```
 
 ### 3. Run the Application
@@ -37,19 +37,23 @@ python run_simple.py
 ### ✅ Core Features
 - **FastAPI Backend**: RESTful API with all endpoints
 - **Streamlit Dashboard**: Interactive web interface
+- **LangGraph Agents**: StateGraph workflow automation
 - **Data Validation**: Comprehensive quality checks
-- **Agent Workflows**: LangGraph-powered automation
-- **LLM Integration**: OpenAI GPT-4 explanations
+- **Anomaly Detection**: AI-powered data quality monitoring
+- **External Integrations**: Slack, Jira, GitHub, SendGrid
+- **LLM Integration**: AI explanations and recommendations
+- **Observability**: LangChain tracing and metrics
 - **SQLite Database**: No external database needed
 - **DuckDB Data Warehouse**: Local data storage
 
-### ❌ What's Removed (for simplicity)
-- Docker containers
-- Celery background tasks
-- Redis caching
-- Nginx load balancing
-- Grafana monitoring
-- Prometheus metrics
+### 🎯 Production Ready
+- Clean, organized codebase
+- Comprehensive error handling
+- Structured logging
+- API documentation
+- Health monitoring
+- Environment configuration
+- LangChain observability
 - Production deployment configs
 
 ## 🎯 How to Use
