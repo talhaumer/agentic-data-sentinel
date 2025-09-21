@@ -1,20 +1,16 @@
 """Data validation and quality checking service."""
 
-import asyncio
 from typing import Dict, List, Any, Optional
 from datetime import datetime
 
 import pandas as pd
 import numpy as np
-from sklearn.ensemble import IsolationForest
-from sklearn.preprocessing import StandardScaler
 
 import structlog
 from sqlalchemy.orm import Session
-from sqlalchemy import inspect, text
 
 from app.config import get_settings
-from app.models import Dataset, Anomaly, Run
+from app.models import Dataset, Anomaly
 from app.schemas import AnomalyCreate
 
 logger = structlog.get_logger(__name__)
@@ -98,7 +94,7 @@ class ValidationService:
 
             # Parse source URL to extract file path
             file_path = self._parse_source_path(dataset.source)
-            
+
             # Check if source is a parquet file
             if file_path and file_path.endswith(".parquet"):
                 return await self._sample_from_parquet(dataset, file_path)
@@ -110,12 +106,12 @@ class ValidationService:
             logger.error("Failed to sample data", dataset_id=dataset.id, error=str(e))
             print(f"Error sampling data: {e}")
             return self._create_mock_data()
-    
+
     def _parse_source_path(self, source: str) -> str:
         """Parse source URL to extract file path."""
         if not source:
             return ""
-            
+
         # Handle file:// URLs
         if source.startswith("file://"):
             # Remove file:// prefix and query parameters
@@ -123,14 +119,16 @@ class ValidationService:
             if "?" in path:
                 path = path.split("?")[0]  # Remove query parameters
             return path
-        
+
         # Handle direct file paths
         if source.endswith((".parquet", ".csv", ".json", ".xlsx")):
             return source
-            
+
         return source
 
-    async def _sample_from_parquet(self, dataset: Dataset, file_path: str = None) -> Optional[pd.DataFrame]:
+    async def _sample_from_parquet(
+        self, dataset: Dataset, file_path: str = None
+    ) -> Optional[pd.DataFrame]:
         """Sample data from parquet file."""
         try:
             from pathlib import Path

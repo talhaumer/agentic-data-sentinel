@@ -1,7 +1,7 @@
 """Pydantic schemas for API request/response models."""
 
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 
 from pydantic import BaseModel, Field
 
@@ -26,8 +26,6 @@ class DatasetBase(BaseSchema):
 
 class DatasetCreate(DatasetBase):
     """Schema for creating a new dataset."""
-
-    pass
 
 
 class DatasetUpdate(BaseSchema):
@@ -69,8 +67,6 @@ class RunBase(BaseSchema):
 class RunCreate(RunBase):
     """Schema for creating a new run."""
 
-    pass
-
 
 class RunUpdate(BaseSchema):
     """Schema for updating a run."""
@@ -103,14 +99,14 @@ class AnomalyBase(BaseSchema):
     suggested_sql: Optional[str] = None
     llm_explanation: Optional[str] = None
     action_taken: Optional[str] = Field(None, max_length=100)
-    status: str = Field("open", pattern="^(open|investigating|resolved|ignored|pending_approval)$")
+    status: str = Field(
+        "open", pattern="^(open|investigating|resolved|ignored|pending_approval)$"
+    )
     extra: Optional[Dict[str, Any]] = None
 
 
 class AnomalyCreate(AnomalyBase):
     """Schema for creating a new anomaly."""
-
-    pass
 
 
 class AnomalyUpdate(BaseSchema):
@@ -147,8 +143,6 @@ class ValidationRuleBase(BaseSchema):
 class ValidationRuleCreate(ValidationRuleBase):
     """Schema for creating a new validation rule."""
 
-    pass
-
 
 class ValidationRuleUpdate(BaseSchema):
     """Schema for updating a validation rule."""
@@ -179,8 +173,6 @@ class ActionLogBase(BaseSchema):
 
 class ActionLogCreate(ActionLogBase):
     """Schema for creating a new action log."""
-
-    pass
 
 
 class ActionLog(ActionLogBase):

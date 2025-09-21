@@ -49,7 +49,9 @@ class LLMService:
         """Generate LLM explanation for an anomaly."""
         # Check if LLM is available
         if not self.llm_available or self.llm is None:
-            logger.warning("LLM not available, using fallback explanation", anomaly_id=anomaly.id)
+            logger.warning(
+                "LLM not available, using fallback explanation", anomaly_id=anomaly.id
+            )
             return LLMExplanationResponse(
                 explanation=self._generate_fallback_explanation(anomaly),
                 confidence=0.3,
@@ -252,27 +254,26 @@ Please provide recommendations in JSON format:
         issue_type = anomaly.issue_type.lower()
         column_name = anomaly.column_name or "unknown column"
         severity = anomaly.severity
-        
+
         explanations = {
             "uniqueness": f"This {issue_type} anomaly in column '{column_name}' indicates low data diversity. This commonly occurs when data contains many duplicate values, categorical data with limited options, or when data generation processes create repetitive patterns. For severity {severity}/5, this suggests the data may not be suitable for certain analytical purposes that require unique identifiers.",
-            
             "null_values": f"This {issue_type} anomaly in column '{column_name}' indicates missing data. This can occur due to incomplete data collection, ETL failures, or optional fields not being populated. For severity {severity}/5, this may impact data completeness and analysis accuracy.",
-            
             "completeness": f"This {issue_type} anomaly in column '{column_name}' suggests incomplete data records. This typically happens when required fields are not being populated during data ingestion or when data sources have gaps. For severity {severity}/5, this may affect data reliability.",
-            
             "consistency": f"This {issue_type} anomaly in column '{column_name}' indicates data format inconsistencies. This often occurs when data comes from multiple sources with different standards, or when data transformation rules are not properly applied. For severity {severity}/5, this may cause processing issues.",
-            
             "accuracy": f"This {issue_type} anomaly in column '{column_name}' suggests data accuracy issues. This can happen when data validation rules fail, data entry errors occur, or when data becomes stale. For severity {severity}/5, this may impact business decisions.",
         }
-        
-        return explanations.get(issue_type, f"This {issue_type} anomaly in column '{column_name}' with severity {severity}/5 requires investigation. The specific root cause should be determined by examining the data source and processing pipeline.")
+
+        return explanations.get(
+            issue_type,
+            f"This {issue_type} anomaly in column '{column_name}' with severity {severity}/5 requires investigation. The specific root cause should be determined by examining the data source and processing pipeline.",
+        )
 
     def _generate_fallback_sql(self, anomaly: Anomaly) -> str:
         """Generate fallback SQL for investigation."""
         column_name = anomaly.column_name or "column_name"
         table_name = anomaly.table_name or "table_name"
         issue_type = anomaly.issue_type.lower()
-        
+
         sql_queries = {
             "uniqueness": f"SELECT {column_name}, COUNT(*) as frequency FROM {table_name} GROUP BY {column_name} ORDER BY frequency DESC LIMIT 10;",
             "null_values": f"SELECT COUNT(*) as total_rows, COUNT({column_name}) as non_null_count, COUNT(*) - COUNT({column_name}) as null_count FROM {table_name};",
@@ -280,14 +281,17 @@ Please provide recommendations in JSON format:
             "consistency": f"SELECT {column_name}, COUNT(*) as frequency FROM {table_name} WHERE {column_name} IS NOT NULL GROUP BY {column_name} ORDER BY frequency DESC LIMIT 20;",
             "accuracy": f"SELECT {column_name}, COUNT(*) as frequency FROM {table_name} WHERE {column_name} IS NOT NULL GROUP BY {column_name} ORDER BY frequency DESC LIMIT 10;",
         }
-        
-        return sql_queries.get(issue_type, f"SELECT * FROM {table_name} WHERE {column_name} IS NOT NULL LIMIT 10;")
+
+        return sql_queries.get(
+            issue_type,
+            f"SELECT * FROM {table_name} WHERE {column_name} IS NOT NULL LIMIT 10;",
+        )
 
     def _suggest_fallback_action(self, anomaly: Anomaly) -> str:
         """Suggest fallback action based on anomaly severity and type."""
         severity = anomaly.severity
-        issue_type = anomaly.issue_type.lower()
-        
+        anomaly.issue_type.lower()
+
         # High severity anomalies should be investigated
         if severity >= 4:
             return "create_issue"

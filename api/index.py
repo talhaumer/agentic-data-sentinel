@@ -18,23 +18,26 @@ os.environ.setdefault("SECRET_KEY", "")
 
 try:
     from app.main_vercel_simple import app
+
     # Export the FastAPI app for Vercel
     handler = app
 except ImportError:
     try:
         from app.main import app
+
         handler = app
     except Exception as e:
         # Fallback minimal app if imports fail
         from fastapi import FastAPI
+
         app = FastAPI(title="Data Sentinel API", version="1.0.0")
-        
+
         @app.get("/")
         async def root():
             return {"message": "Data Sentinel API", "status": "running"}
-        
+
         @app.get("/health")
         async def health():
             return {"status": "healthy", "error": str(e)}
-        
+
         handler = app

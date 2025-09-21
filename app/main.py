@@ -1,6 +1,5 @@
 """Main FastAPI application entry point."""
 
-import logging
 from contextlib import asynccontextmanager
 from typing import AsyncGenerator
 

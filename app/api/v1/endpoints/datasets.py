@@ -1,6 +1,6 @@
 """Dataset management endpoints."""
 
-from typing import List, Optional
+from typing import List
 
 import structlog
 from fastapi import APIRouter, Depends, HTTPException, Query

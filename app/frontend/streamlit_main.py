@@ -3,13 +3,10 @@
 import streamlit as st
 import pandas as pd
 import plotly.express as px
-import plotly.graph_objects as go
-from plotly.subplots import make_subplots
 from datetime import datetime, timedelta
 import requests
-import json
 import time
-from typing import Dict, List, Any
+from typing import Dict, Any
 
 # Page configuration
 st.set_page_config(
@@ -18,10 +15,10 @@ st.set_page_config(
     layout="wide",
     initial_sidebar_state="expanded",
     menu_items={
-        'Get Help': 'https://github.com/your-org/data-sentinel',
-        'Report a bug': "https://github.com/your-org/data-sentinel/issues",
-        'About': "Data Sentinel v1.0 - AI-Powered Data Quality Monitoring"
-    }
+        "Get Help": "https://github.com/your-org/data-sentinel",
+        "Report a bug": "https://github.com/your-org/data-sentinel/issues",
+        "About": "Data Sentinel v1.0 - AI-Powered Data Quality Monitoring",
+    },
 )
 
 # API base URL
@@ -140,12 +137,13 @@ def fetch_data(endpoint: str, params: Dict = None) -> Dict:
         st.error(f"Failed to fetch data from {endpoint}: {e}")
         return {}
 
+
 def get_status_indicator(status: str) -> str:
     """Get status indicator HTML."""
     status_map = {
         "healthy": "status-healthy",
         "connected": "status-healthy",
-        "completed": "status-healthy", 
+        "completed": "status-healthy",
         "open": "status-critical",
         "failed": "status-critical",
         "disconnected": "status-critical",
@@ -154,15 +152,19 @@ def get_status_indicator(status: str) -> str:
         "pending": "status-warning",
         "resolved": "status-healthy",
         "investigating": "status-warning",
-        "pending_approval": "status-warning"
+        "pending_approval": "status-warning",
     }
     css_class = status_map.get(status.lower(), "status-unknown")
     return f"""<span class="status-indicator {css_class}"></span>"""
 
 
-def create_metric_card(title: str, value: Any, delta: str = None, card_type: str = "metric") -> str:
+def create_metric_card(
+    title: str, value: Any, delta: str = None, card_type: str = "metric"
+) -> str:
     """Create a metric card HTML."""
-    delta_html = f'<div style="font-size: 0.8rem; opacity: 0.8;">{delta}</div>' if delta else ""
+    delta_html = (
+        f'<div style="font-size: 0.8rem; opacity: 0.8;">{delta}</div>' if delta else ""
+    )
     return f"""
     <div class="{card_type}-card">
         <h3>{title}</h3>
@@ -170,6 +172,7 @@ def create_metric_card(title: str, value: Any, delta: str = None, card_type: str
         {delta_html}
     </div>
     """
+
 
 def main():
     """Main dashboard application."""
@@ -179,17 +182,25 @@ def main():
 
     # Sidebar navigation with enhanced styling
     st.sidebar.markdown("## 🧭 Navigation")
-    
+
     # Add refresh button
     if st.sidebar.button("🔄 Refresh Data", use_container_width=True):
         st.cache_data.clear()
         st.rerun()
-    
+
     st.sidebar.markdown("---")
-    
+
     page = st.sidebar.selectbox(
         "Choose a page",
-        ["📊 Overview", "📁 Datasets", "🚨 Anomalies", "🔄 Runs", "🤖 Agent Workflows", "👥 Pending Approvals", "⚙️ Settings"],
+        [
+            "📊 Overview",
+            "📁 Datasets",
+            "🚨 Anomalies",
+            "🔄 Runs",
+            "🤖 Agent Workflows",
+            "👥 Pending Approvals",
+            "⚙️ Settings",
+        ],
     )
 
     # Add system status in sidebar
@@ -197,9 +208,18 @@ def main():
         health_data = fetch_data("health/")
         if health_data:
             st.sidebar.markdown("## 🏥 System Status")
-            st.sidebar.markdown(f"**API:** {get_status_indicator(health_data.get('status', 'unknown'))} {health_data.get('status', 'Unknown')}", unsafe_allow_html=True)
-            st.sidebar.markdown(f"**Database:** {get_status_indicator(health_data.get('database', 'unknown'))} {health_data.get('database', 'Unknown')}", unsafe_allow_html=True)
-            st.sidebar.markdown(f"**LLM:** {get_status_indicator(health_data.get('llm', 'unknown'))} {health_data.get('llm', 'Unknown')}", unsafe_allow_html=True)
+            st.sidebar.markdown(
+                f"**API:** {get_status_indicator(health_data.get('status', 'unknown'))} {health_data.get('status', 'Unknown')}",
+                unsafe_allow_html=True,
+            )
+            st.sidebar.markdown(
+                f"**Database:** {get_status_indicator(health_data.get('database', 'unknown'))} {health_data.get('database', 'Unknown')}",
+                unsafe_allow_html=True,
+            )
+            st.sidebar.markdown(
+                f"**LLM:** {get_status_indicator(health_data.get('llm', 'unknown'))} {health_data.get('llm', 'Unknown')}",
+                unsafe_allow_html=True,
+            )
     except:
         st.sidebar.markdown("## 🏥 System Status")
         st.sidebar.error("Unable to connect to API", unsafe_allow_html=True)
@@ -224,7 +244,7 @@ def main():
 def show_overview():
     """Show enhanced overview dashboard."""
     st.header("📊 System Overview")
-    
+
     # Add auto-refresh option
     col1, col2 = st.columns([3, 1])
     with col1:
@@ -238,156 +258,194 @@ def show_overview():
     # Health status with enhanced cards
     st.subheader("🏥 System Health")
     health_data = fetch_data("health/")
-    
+
     if health_data:
         col1, col2, col3, col4 = st.columns(4)
-        
+
         with col1:
             status = health_data.get("status", "Unknown")
-            st.markdown(create_metric_card(
-                "System Status", 
-                f"{get_status_indicator(status)} {status.title()}",
-                card_type="success" if status == "healthy" else "warning"
-            ), unsafe_allow_html=True)
-        
+            st.markdown(
+                create_metric_card(
+                    "System Status",
+                    f"{get_status_indicator(status)} {status.title()}",
+                    card_type="success" if status == "healthy" else "warning",
+                ),
+                unsafe_allow_html=True,
+            )
+
         with col2:
             db_status = health_data.get("database", "Unknown")
-            st.markdown(create_metric_card(
-                "Database", 
-                f"{get_status_indicator(db_status)} {db_status.title()}",
-                card_type="success" if db_status == "healthy" else "warning"
-            ), unsafe_allow_html=True)
-        
+            st.markdown(
+                create_metric_card(
+                    "Database",
+                    f"{get_status_indicator(db_status)} {db_status.title()}",
+                    card_type="success" if db_status == "healthy" else "warning",
+                ),
+                unsafe_allow_html=True,
+            )
+
         with col3:
             llm_status = health_data.get("llm", "Unknown")
-            st.markdown(create_metric_card(
-                "LLM Service", 
-                f"{get_status_indicator(llm_status)} {llm_status.title()}",
-                card_type="success" if llm_status == "healthy" else "warning"
-            ), unsafe_allow_html=True)
-        
+            st.markdown(
+                create_metric_card(
+                    "LLM Service",
+                    f"{get_status_indicator(llm_status)} {llm_status.title()}",
+                    card_type="success" if llm_status == "healthy" else "warning",
+                ),
+                unsafe_allow_html=True,
+            )
+
         with col4:
             version = health_data.get("version", "v1.0")
-            st.markdown(create_metric_card(
-                "Version", 
-                f"🛡️ {version}",
-                card_type="info"
-            ), unsafe_allow_html=True)
+            st.markdown(
+                create_metric_card("Version", f"🛡️ {version}", card_type="info"),
+                unsafe_allow_html=True,
+            )
 
     # Enhanced metrics with better visualizations
     st.subheader("📈 Key Metrics")
-    
+
     # Fetch all data
     datasets = fetch_data("datasets/")
     anomalies = fetch_data("anomalies/")
     runs = fetch_data("runs/")
-    
+
     if datasets and anomalies and runs:
         # Calculate enhanced metrics
         total_datasets = len(datasets)
-        total_anomalies = len(anomalies)
+        len(anomalies)
         open_anomalies = len([a for a in anomalies if a.get("status") == "open"])
         high_severity = len([a for a in anomalies if a.get("severity", 0) >= 4])
-        avg_health_score = sum(d.get("health_score", 0) for d in datasets) / max(total_datasets, 1)
-        
+        avg_health_score = sum(d.get("health_score", 0) for d in datasets) / max(
+            total_datasets, 1
+        )
+
         # Recent runs (last 24h)
-        recent_runs = len([
-            r for r in runs
-            if datetime.fromisoformat(r.get("run_time", "1970-01-01").replace("Z", "+00:00"))
-            > datetime.now() - timedelta(days=1)
-        ])
-        
+        recent_runs = len(
+            [
+                r
+                for r in runs
+                if datetime.fromisoformat(
+                    r.get("run_time", "1970-01-01").replace("Z", "+00:00")
+                )
+                > datetime.now() - timedelta(days=1)
+            ]
+        )
+
         # Success rate
         completed_runs = len([r for r in runs if r.get("status") == "completed"])
         success_rate = (completed_runs / max(len(runs), 1)) * 100
 
         # Display enhanced metrics
         col1, col2, col3, col4 = st.columns(4)
-        
+
         with col1:
-            st.markdown(create_metric_card(
-                "Total Datasets", 
-                total_datasets,
-                f"📊 {total_datasets} active",
-                card_type="info"
-            ), unsafe_allow_html=True)
-        
+            st.markdown(
+                create_metric_card(
+                    "Total Datasets",
+                    total_datasets,
+                    f"📊 {total_datasets} active",
+                    card_type="info",
+                ),
+                unsafe_allow_html=True,
+            )
+
         with col2:
-            st.markdown(create_metric_card(
-                "Open Anomalies", 
-                open_anomalies,
-                f"🚨 {high_severity} critical" if high_severity > 0 else "✅ All good",
-                card_type="anomaly" if open_anomalies > 0 else "success"
-            ), unsafe_allow_html=True)
-        
+            st.markdown(
+                create_metric_card(
+                    "Open Anomalies",
+                    open_anomalies,
+                    (
+                        f"🚨 {high_severity} critical"
+                        if high_severity > 0
+                        else "✅ All good"
+                    ),
+                    card_type="anomaly" if open_anomalies > 0 else "success",
+                ),
+                unsafe_allow_html=True,
+            )
+
         with col3:
-            health_color = "success" if avg_health_score >= 0.8 else "warning" if avg_health_score >= 0.6 else "anomaly"
-            st.markdown(create_metric_card(
-                "Avg Health Score", 
-                f"{avg_health_score:.2f}",
-                f"📈 {avg_health_score*100:.0f}% healthy",
-                card_type=health_color
-            ), unsafe_allow_html=True)
-        
+            health_color = (
+                "success"
+                if avg_health_score >= 0.8
+                else "warning" if avg_health_score >= 0.6 else "anomaly"
+            )
+            st.markdown(
+                create_metric_card(
+                    "Avg Health Score",
+                    f"{avg_health_score:.2f}",
+                    f"📈 {avg_health_score*100:.0f}% healthy",
+                    card_type=health_color,
+                ),
+                unsafe_allow_html=True,
+            )
+
         with col4:
-            st.markdown(create_metric_card(
-                "Success Rate", 
-                f"{success_rate:.1f}%",
-                f"🔄 {recent_runs} runs (24h)",
-                card_type="success" if success_rate >= 90 else "warning"
-            ), unsafe_allow_html=True)
+            st.markdown(
+                create_metric_card(
+                    "Success Rate",
+                    f"{success_rate:.1f}%",
+                    f"🔄 {recent_runs} runs (24h)",
+                    card_type="success" if success_rate >= 90 else "warning",
+                ),
+                unsafe_allow_html=True,
+            )
 
         # Enhanced visualizations
         col1, col2 = st.columns(2)
-        
+
         with col1:
             # Health score distribution with better styling
             st.subheader("📊 Health Score Distribution")
             health_scores = [d.get("health_score", 0) for d in datasets]
-            
+
             fig = px.histogram(
                 x=health_scores,
                 nbins=20,
                 title="Dataset Health Score Distribution",
                 labels={"x": "Health Score", "y": "Count"},
-                color_discrete_sequence=['#667eea'],
-                opacity=0.8
+                color_discrete_sequence=["#667eea"],
+                opacity=0.8,
             )
             fig.update_layout(
-                plot_bgcolor='rgba(0,0,0,0)',
-                paper_bgcolor='rgba(0,0,0,0)',
-                font=dict(size=12)
+                plot_bgcolor="rgba(0,0,0,0)",
+                paper_bgcolor="rgba(0,0,0,0)",
+                font=dict(size=12),
             )
             st.plotly_chart(fig, use_container_width=True)
-        
+
         with col2:
             # Anomaly severity pie chart
             st.subheader("🚨 Anomaly Severity Breakdown")
             severity_counts = {}
             for anomaly in anomalies:
                 severity = anomaly.get("severity", 1)
-                severity_counts[f"Level {severity}"] = severity_counts.get(f"Level {severity}", 0) + 1
-            
+                severity_counts[f"Level {severity}"] = (
+                    severity_counts.get(f"Level {severity}", 0) + 1
+                )
+
             if severity_counts:
-                colors = ['#00b894', '#fdcb6e', '#e17055', '#ff6b6b', '#d63031']
+                colors = ["#00b894", "#fdcb6e", "#e17055", "#ff6b6b", "#d63031"]
                 fig = px.pie(
                     values=list(severity_counts.values()),
                     names=list(severity_counts.keys()),
                     title="Anomaly Severity Distribution",
-                    color_discrete_sequence=colors[:len(severity_counts)]
+                    color_discrete_sequence=colors[: len(severity_counts)],
                 )
                 fig.update_layout(
-                    plot_bgcolor='rgba(0,0,0,0)',
-                    paper_bgcolor='rgba(0,0,0,0)',
-                    font=dict(size=12)
+                    plot_bgcolor="rgba(0,0,0,0)",
+                    paper_bgcolor="rgba(0,0,0,0)",
+                    font=dict(size=12),
                 )
                 st.plotly_chart(fig, use_container_width=True)
             else:
-                st.markdown(create_metric_card(
-                    "No Anomalies", 
-                    "🎉 All systems healthy!",
-                    card_type="success"
-                ), unsafe_allow_html=True)
+                st.markdown(
+                    create_metric_card(
+                        "No Anomalies", "🎉 All systems healthy!", card_type="success"
+                    ),
+                    unsafe_allow_html=True,
+                )
 
         # Recent anomalies with enhanced display
         if anomalies:
@@ -398,26 +456,35 @@ def show_overview():
 
             for i, anomaly in enumerate(recent_anomalies):
                 severity = anomaly.get("severity", 1)
-                severity_emoji = "🔴" if severity >= 4 else "🟡" if severity >= 3 else "🟢"
-                
+                severity_emoji = (
+                    "🔴" if severity >= 4 else "🟡" if severity >= 3 else "🟢"
+                )
+
                 # Create expandable anomaly card
-                with st.expander(f"{severity_emoji} {anomaly.get('issue_type', 'Unknown')} - {anomaly.get('table_name', 'Unknown')}", expanded=i<2):
+                with st.expander(
+                    f"{severity_emoji} {anomaly.get('issue_type', 'Unknown')} - {anomaly.get('table_name', 'Unknown')}",
+                    expanded=i < 2,
+                ):
                     col1, col2 = st.columns(2)
-                    
+
                     with col1:
-                        st.write(f"**Description:** {anomaly.get('description', 'No description')}")
+                        st.write(
+                            f"**Description:** {anomaly.get('description', 'No description')}"
+                        )
                         st.write(f"**Column:** {anomaly.get('column_name', 'N/A')}")
                         st.write(f"**Severity:** {severity}/5")
                         st.write(f"**Status:** {anomaly.get('status', 'Unknown')}")
-                    
+
                     with col2:
-                        st.write(f"**Detected:** {anomaly.get('detected_at', 'Unknown')}")
+                        st.write(
+                            f"**Detected:** {anomaly.get('detected_at', 'Unknown')}"
+                        )
                         st.write(f"**Action:** {anomaly.get('action_taken', 'None')}")
-                        
+
                         if anomaly.get("llm_explanation"):
                             st.write("**AI Explanation:**")
                             st.info(anomaly.get("llm_explanation"))
-                        
+
                         if anomaly.get("suggested_sql"):
                             st.write("**Suggested Fix:**")
                             st.code(anomaly.get("suggested_sql"), language="sql")
@@ -433,56 +500,56 @@ def show_datasets():
     with st.expander("Add New Dataset", expanded=True):
         with st.form("add_dataset"):
             col1, col2 = st.columns(2)
-            
+
             with col1:
                 name = st.text_input("Dataset Name", placeholder="e.g., sample_events")
                 owner = st.text_input("Owner", placeholder="e.g., data_team")
-                
+
             with col2:
                 source_type = st.selectbox(
-                    "Source Type", 
+                    "Source Type",
                     ["File", "Database", "API", "Other"],
-                    help="Select the type of data source"
+                    help="Select the type of data source",
                 )
-                
+
                 if source_type == "File":
                     file_path = st.text_input(
-                        "File Path", 
+                        "File Path",
                         placeholder="/app/data/sample_events.parquet",
-                        help="Path to the data file (use /app/data/ for mounted files)"
+                        help="Path to the data file (use /app/data/ for mounted files)",
                     )
                     file_format = st.selectbox(
                         "File Format",
                         ["parquet", "csv", "json", "xlsx"],
-                        help="Format of the data file"
+                        help="Format of the data file",
                     )
                     source = f"file://{file_path}?format={file_format}"
-                    
+
                 elif source_type == "Database":
                     db_connection = st.text_input(
                         "Database Connection",
                         placeholder="sqlite:///./data/dw.db",
-                        help="Database connection string"
+                        help="Database connection string",
                     )
                     table_name = st.text_input(
                         "Table Name",
                         placeholder="events",
-                        help="Name of the table to monitor"
+                        help="Name of the table to monitor",
                     )
                     source = f"db://{db_connection}?table={table_name}"
-                    
+
                 elif source_type == "API":
                     api_url = st.text_input(
                         "API URL",
                         placeholder="https://api.example.com/data",
-                        help="API endpoint URL"
+                        help="API endpoint URL",
                     )
                     source = f"api://{api_url}"
-                    
+
                 else:
                     source = st.text_input(
                         "Source Description",
-                        placeholder="Custom data source description"
+                        placeholder="Custom data source description",
                     )
 
             # Advanced options
@@ -494,13 +561,13 @@ def show_datasets():
                         min_value=100,
                         max_value=100000,
                         value=1000,
-                        help="Number of rows to sample for validation"
+                        help="Number of rows to sample for validation",
                     )
                 with col2:
                     validation_frequency = st.selectbox(
                         "Validation Frequency",
                         ["hourly", "daily", "weekly", "manual"],
-                        help="How often to run validation checks"
+                        help="How often to run validation checks",
                     )
 
             if st.form_submit_button("Add Dataset", use_container_width=True):
@@ -508,7 +575,9 @@ def show_datasets():
                     st.error("Please enter a dataset name")
                 elif source_type == "File" and not file_path:
                     st.error("Please enter a file path")
-                elif source_type == "Database" and (not db_connection or not table_name):
+                elif source_type == "Database" and (
+                    not db_connection or not table_name
+                ):
                     st.error("Please enter database connection and table name")
                 elif source_type == "API" and not api_url:
                     st.error("Please enter an API URL")
@@ -518,24 +587,26 @@ def show_datasets():
                         dataset_payload = {
                             "name": name,
                             "owner": owner,
-                            "source": source
+                            "source": source,
                         }
-                        
+
                         response = requests.post(
                             f"{API_BASE_URL}/datasets/",
                             json=dataset_payload,
                         )
-                        
+
                         if response.status_code == 201:
                             st.success("✅ Dataset added successfully!")
-                            
+
                             # Show next steps
-                            st.info("""
+                            st.info(
+                                """
                             **Next Steps:**
                             1. Go to **Agent Workflows** to run quality checks
                             2. Check **Anomalies** page for any detected issues
                             3. View **Overview** for system health metrics
-                            """)
+                            """
+                            )
                             st.rerun()
                         else:
                             st.error(f"❌ Failed to add dataset: {response.text}")
@@ -601,7 +672,7 @@ def show_anomalies():
         severity_filter = st.selectbox("Min Severity", [1, 2, 3, 4, 5])
 
     with col3:
-        dataset_filter = st.selectbox("Dataset", ["All"])
+        st.selectbox("Dataset", ["All"])
 
     # Get anomalies
     try:
@@ -797,41 +868,49 @@ def show_runs():
 def show_agent_workflows():
     """Show enhanced agent workflow management page."""
     st.header("🤖 Agent Workflows")
-    
+
     # Add tabs for better organization
-    tab1, tab2, tab3 = st.tabs(["🚀 Trigger Workflow", "📊 Workflow Status", "📈 Analytics"])
-    
+    tab1, tab2, tab3 = st.tabs(
+        ["🚀 Trigger Workflow", "📊 Workflow Status", "📈 Analytics"]
+    )
+
     with tab1:
         st.subheader("Trigger New Workflow")
-        
+
         # Enhanced workflow trigger form
         with st.form("workflow_trigger"):
             col1, col2 = st.columns(2)
-            
+
             with col1:
                 # Get datasets for selection
                 datasets = fetch_data("datasets/")
-                
+
                 if datasets:
                     dataset_options = {
-                        f"{d['name']} (Health: {d.get('health_score', 0):.2f})": d["id"] 
+                        f"{d['name']} (Health: {d.get('health_score', 0):.2f})": d["id"]
                         for d in datasets
                     }
                     selected_dataset = st.selectbox(
-                        "Select Dataset", 
+                        "Select Dataset",
                         list(dataset_options.keys()),
-                        help="Choose a dataset to run quality checks on"
+                        help="Choose a dataset to run quality checks on",
                     )
                 else:
                     st.warning("No datasets available. Please add a dataset first.")
                     selected_dataset = None
-            
+
             with col2:
-                include_llm = st.checkbox("Include LLM Explanation", value=True, 
-                                        help="Generate AI-powered explanations for detected anomalies")
-                force_run = st.checkbox("Force Run", value=False,
-                                      help="Run even if dataset was recently checked")
-            
+                include_llm = st.checkbox(
+                    "Include LLM Explanation",
+                    value=True,
+                    help="Generate AI-powered explanations for detected anomalies",
+                )
+                force_run = st.checkbox(
+                    "Force Run",
+                    value=False,
+                    help="Run even if dataset was recently checked",
+                )
+
             # Advanced options
             with st.expander("Advanced Options"):
                 col1, col2 = st.columns(2)
@@ -840,29 +919,29 @@ def show_agent_workflows():
                         "Validation Rules",
                         ["null_check", "uniqueness", "range_check", "pattern_match"],
                         default=["null_check", "uniqueness"],
-                        help="Select specific validation rules to apply"
+                        help="Select specific validation rules to apply",
                     )
                 with col2:
                     sample_size = st.number_input(
-                        "Sample Size", 
-                        min_value=100, 
-                        max_value=10000, 
+                        "Sample Size",
+                        min_value=100,
+                        max_value=10000,
                         value=1000,
-                        help="Number of rows to sample for validation"
+                        help="Number of rows to sample for validation",
                     )
-            
+
             if st.form_submit_button("🚀 Trigger Workflow", use_container_width=True):
                 if selected_dataset:
                     dataset_id = dataset_options[selected_dataset]
-                    
+
                     # Show progress
                     progress_bar = st.progress(0)
                     status_text = st.empty()
-                    
+
                     try:
                         status_text.text("🔄 Triggering workflow...")
                         progress_bar.progress(25)
-                        
+
                         response = requests.post(
                             f"{API_BASE_URL}/agent/workflow",
                             json={
@@ -870,65 +949,81 @@ def show_agent_workflows():
                                 "include_llm_explanation": include_llm,
                                 "force_run": force_run,
                             },
-                            timeout=30
+                            timeout=30,
                         )
-                        
+
                         progress_bar.progress(75)
                         status_text.text("✅ Processing response...")
-                        
+
                         if response.status_code == 200:
                             result = response.json()
                             progress_bar.progress(100)
                             status_text.text("🎉 Workflow completed successfully!")
-                            
-                            st.success(f"Workflow triggered! Run ID: {result.get('run_id')}")
-                            
+
+                            st.success(
+                                f"Workflow triggered! Run ID: {result.get('run_id')}"
+                            )
+
                             # Show results summary
                             if result.get("summary"):
                                 summary = result.get("summary", {})
                                 col1, col2, col3 = st.columns(3)
                                 with col1:
-                                    st.metric("Health Score", f"{summary.get('health_score', 0):.2f}")
+                                    st.metric(
+                                        "Health Score",
+                                        f"{summary.get('health_score', 0):.2f}",
+                                    )
                                 with col2:
-                                    st.metric("Anomalies Detected", summary.get('anomalies_detected', 0))
+                                    st.metric(
+                                        "Anomalies Detected",
+                                        summary.get("anomalies_detected", 0),
+                                    )
                                 with col3:
-                                    st.metric("Actions Taken", summary.get('actions_taken', 0))
-                            
+                                    st.metric(
+                                        "Actions Taken", summary.get("actions_taken", 0)
+                                    )
+
                             st.rerun()
                         else:
                             st.error(f"Failed to trigger workflow: {response.text}")
-                            
+
                     except requests.exceptions.Timeout:
                         st.error("Workflow timed out. Please try again.")
                     except Exception as e:
                         st.error(f"Error: {e}")
                 else:
                     st.error("Please select a dataset first.")
-    
+
     with tab2:
         st.subheader("Workflow Status & History")
-        
+
         # Filters
         col1, col2, col3 = st.columns(3)
         with col1:
-            status_filter = st.selectbox("Status Filter", ["All", "completed", "failed", "running", "pending"])
+            status_filter = st.selectbox(
+                "Status Filter", ["All", "completed", "failed", "running", "pending"]
+            )
         with col2:
-            time_filter = st.selectbox("Time Range", ["All", "Last 24h", "Last 7 days", "Last 30 days"])
+            time_filter = st.selectbox(
+                "Time Range", ["All", "Last 24h", "Last 7 days", "Last 30 days"]
+            )
         with col3:
             if st.button("🔄 Refresh Status"):
                 st.cache_data.clear()
                 st.rerun()
-        
+
         # Get runs with filters
         runs = fetch_data("runs/")
-        
+
         if runs:
             # Apply filters
             filtered_runs = runs.copy()
-            
+
             if status_filter != "All":
-                filtered_runs = [r for r in filtered_runs if r.get("status") == status_filter]
-            
+                filtered_runs = [
+                    r for r in filtered_runs if r.get("status") == status_filter
+                ]
+
             if time_filter != "All":
                 now = datetime.now()
                 if time_filter == "Last 24h":
@@ -937,98 +1032,153 @@ def show_agent_workflows():
                     cutoff = now - timedelta(days=7)
                 elif time_filter == "Last 30 days":
                     cutoff = now - timedelta(days=30)
-                
+
                 filtered_runs = [
-                    r for r in filtered_runs
-                    if datetime.fromisoformat(r.get("run_time", "1970-01-01").replace("Z", "+00:00")) > cutoff
+                    r
+                    for r in filtered_runs
+                    if datetime.fromisoformat(
+                        r.get("run_time", "1970-01-01").replace("Z", "+00:00")
+                    )
+                    > cutoff
                 ]
-            
+
             # Sort by run time
-            filtered_runs = sorted(filtered_runs, key=lambda x: x.get("run_time", ""), reverse=True)
-            
+            filtered_runs = sorted(
+                filtered_runs, key=lambda x: x.get("run_time", ""), reverse=True
+            )
+
             # Display metrics
             col1, col2, col3, col4 = st.columns(4)
             with col1:
                 st.metric("Total Runs", len(filtered_runs))
             with col2:
-                completed = len([r for r in filtered_runs if r.get("status") == "completed"])
+                completed = len(
+                    [r for r in filtered_runs if r.get("status") == "completed"]
+                )
                 st.metric("Completed", completed)
             with col3:
                 failed = len([r for r in filtered_runs if r.get("status") == "failed"])
                 st.metric("Failed", failed)
             with col4:
-                avg_duration = sum(r.get("duration_seconds", 0) for r in filtered_runs if r.get("duration_seconds")) / max(len([r for r in filtered_runs if r.get("duration_seconds")]), 1)
+                avg_duration = sum(
+                    r.get("duration_seconds", 0)
+                    for r in filtered_runs
+                    if r.get("duration_seconds")
+                ) / max(len([r for r in filtered_runs if r.get("duration_seconds")]), 1)
                 st.metric("Avg Duration", f"{avg_duration:.1f}s")
-            
+
             # Display runs
             for run in filtered_runs[:20]:  # Show last 20 runs
                 status = run.get("status", "Unknown")
-                status_emoji = "🟢" if status == "completed" else "🟡" if status == "running" else "🔴"
-                
-                with st.expander(f"{status_emoji} Run {run.get('id')} - {status.title()}", expanded=False):
+                status_emoji = (
+                    "🟢"
+                    if status == "completed"
+                    else "🟡" if status == "running" else "🔴"
+                )
+
+                with st.expander(
+                    f"{status_emoji} Run {run.get('id')} - {status.title()}",
+                    expanded=False,
+                ):
                     col1, col2 = st.columns(2)
-                    
+
                     with col1:
                         st.write(f"**Dataset ID:** {run.get('dataset_id')}")
                         st.write(f"**Status:** {status}")
                         st.write(f"**Run Time:** {run.get('run_time', 'Unknown')}")
                         st.write(f"**Duration:** {run.get('duration_seconds', 'N/A')}s")
-                    
+
                     with col2:
                         if run.get("summary"):
                             summary = run.get("summary", {})
-                            st.write(f"**Health Score:** {summary.get('health_score', 'N/A')}")
-                            st.write(f"**Anomalies Detected:** {summary.get('anomalies_detected', 'N/A')}")
-                            st.write(f"**Actions Taken:** {summary.get('actions_taken', 'N/A')}")
-                            
+                            st.write(
+                                f"**Health Score:** {summary.get('health_score', 'N/A')}"
+                            )
+                            st.write(
+                                f"**Anomalies Detected:** {summary.get('anomalies_detected', 'N/A')}"
+                            )
+                            st.write(
+                                f"**Actions Taken:** {summary.get('actions_taken', 'N/A')}"
+                            )
+
                             if summary.get("error"):
                                 st.error(f"Error: {summary.get('error')}")
         else:
             st.info("No runs found.")
-    
+
     with tab3:
         st.subheader("Workflow Analytics")
-        
+
         runs = fetch_data("runs/")
-        
+
         if runs and len(runs) > 0:
             # Convert to DataFrame for analysis
             df = pd.DataFrame(runs)
             df["run_time"] = pd.to_datetime(df["run_time"])
             df["date"] = df["run_time"].dt.date
-            
+
             # Success rate over time
-            daily_stats = df.groupby("date").agg({
-                "status": lambda x: (x == "completed").sum() / len(x) * 100,
-                "duration_seconds": "mean",
-                "id": "count"
-            }).reset_index()
-            daily_stats.columns = ["Date", "Success Rate (%)", "Avg Duration (s)", "Run Count"]
-            
+            daily_stats = (
+                df.groupby("date")
+                .agg(
+                    {
+                        "status": lambda x: (x == "completed").sum() / len(x) * 100,
+                        "duration_seconds": "mean",
+                        "id": "count",
+                    }
+                )
+                .reset_index()
+            )
+            daily_stats.columns = [
+                "Date",
+                "Success Rate (%)",
+                "Avg Duration (s)",
+                "Run Count",
+            ]
+
             col1, col2 = st.columns(2)
-            
+
             with col1:
                 st.subheader("Success Rate Over Time")
-                fig = px.line(daily_stats, x="Date", y="Success Rate (%)", 
-                            title="Daily Success Rate", markers=True)
-                fig.update_layout(plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)')
+                fig = px.line(
+                    daily_stats,
+                    x="Date",
+                    y="Success Rate (%)",
+                    title="Daily Success Rate",
+                    markers=True,
+                )
+                fig.update_layout(
+                    plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)"
+                )
                 st.plotly_chart(fig, use_container_width=True)
-            
+
             with col2:
                 st.subheader("Run Duration Trends")
-                fig = px.line(daily_stats, x="Date", y="Avg Duration (s)", 
-                            title="Average Run Duration", markers=True)
-                fig.update_layout(plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)')
+                fig = px.line(
+                    daily_stats,
+                    x="Date",
+                    y="Avg Duration (s)",
+                    title="Average Run Duration",
+                    markers=True,
+                )
+                fig.update_layout(
+                    plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)"
+                )
                 st.plotly_chart(fig, use_container_width=True)
-            
+
             # Status distribution
             st.subheader("Run Status Distribution")
             status_counts = df["status"].value_counts()
-            fig = px.pie(values=status_counts.values, names=status_counts.index, 
-                        title="Run Status Distribution")
-            fig.update_layout(plot_bgcolor='rgba(0,0,0,0)', paper_bgcolor='rgba(0,0,0,0)')
+            fig = px.pie(
+                values=status_counts.values,
+                names=status_counts.index,
+                title="Run Status Distribution",
+            )
+            fig.update_layout(
+                plot_bgcolor="rgba(0,0,0,0)", paper_bgcolor="rgba(0,0,0,0)"
+            )
             st.plotly_chart(fig, use_container_width=True)
-            
+
         else:
             st.info("No runs available for analytics.")
 
@@ -1037,7 +1187,7 @@ def show_pending_approvals():
     """Show pending approvals page for human-in-the-loop."""
     st.header("👥 Pending Approvals")
     st.markdown("Review and approve actions suggested by the AI agent.")
-    
+
     # Add refresh button
     col1, col2 = st.columns([3, 1])
     with col1:
@@ -1046,77 +1196,101 @@ def show_pending_approvals():
         if st.button("🔄 Refresh", use_container_width=True):
             st.cache_data.clear()
             st.rerun()
-    
+
     # Get pending approvals
     try:
         approvals_data = fetch_data("agent/pending-approvals")
         pending_approvals = approvals_data.get("pending_approvals", [])
-        
+
         if not pending_approvals:
             st.success("🎉 No pending approvals! All anomalies have been processed.")
             return
-        
+
         # Display summary metrics
         col1, col2, col3, col4 = st.columns(4)
         with col1:
             st.metric("Total Pending", len(pending_approvals))
         with col2:
-            high_priority = len([a for a in pending_approvals if a.get("priority") == "high"])
+            high_priority = len(
+                [a for a in pending_approvals if a.get("priority") == "high"]
+            )
             st.metric("High Priority", high_priority)
         with col3:
-            medium_priority = len([a for a in pending_approvals if a.get("priority") == "medium"])
+            medium_priority = len(
+                [a for a in pending_approvals if a.get("priority") == "medium"]
+            )
             st.metric("Medium Priority", medium_priority)
         with col4:
-            low_priority = len([a for a in pending_approvals if a.get("priority") == "low"])
+            low_priority = len(
+                [a for a in pending_approvals if a.get("priority") == "low"]
+            )
             st.metric("Low Priority", low_priority)
-        
+
         # Filter options
         st.subheader("🔍 Filters")
         col1, col2, col3 = st.columns(3)
         with col1:
-            priority_filter = st.selectbox("Priority Filter", ["All", "high", "medium", "low"])
+            priority_filter = st.selectbox(
+                "Priority Filter", ["All", "high", "medium", "low"]
+            )
         with col2:
-            action_filter = st.selectbox("Action Filter", ["All", "create_issue", "notify_owner", "auto_fix"])
+            action_filter = st.selectbox(
+                "Action Filter", ["All", "create_issue", "notify_owner", "auto_fix"]
+            )
         with col3:
-            severity_filter = st.selectbox("Min Severity", ["All", "1", "2", "3", "4", "5"])
-        
+            severity_filter = st.selectbox(
+                "Min Severity", ["All", "1", "2", "3", "4", "5"]
+            )
+
         # Apply filters
         filtered_approvals = pending_approvals.copy()
         if priority_filter != "All":
-            filtered_approvals = [a for a in filtered_approvals if a.get("priority") == priority_filter]
+            filtered_approvals = [
+                a for a in filtered_approvals if a.get("priority") == priority_filter
+            ]
         if action_filter != "All":
-            filtered_approvals = [a for a in filtered_approvals if a.get("suggested_action") == action_filter]
+            filtered_approvals = [
+                a
+                for a in filtered_approvals
+                if a.get("suggested_action") == action_filter
+            ]
         if severity_filter != "All":
             min_severity = int(severity_filter)
-            filtered_approvals = [a for a in filtered_approvals if a.get("severity", 0) >= min_severity]
-        
-        st.markdown(f"**Showing {len(filtered_approvals)} of {len(pending_approvals)} pending approvals**")
-        
+            filtered_approvals = [
+                a for a in filtered_approvals if a.get("severity", 0) >= min_severity
+            ]
+
+        st.markdown(
+            f"**Showing {len(filtered_approvals)} of {len(pending_approvals)} pending approvals**"
+        )
+
         # Display each approval
         for i, approval in enumerate(filtered_approvals):
             anomaly_id = approval.get("anomaly_id")
             severity = approval.get("severity", 1)
             priority = approval.get("priority", "low")
             suggested_action = approval.get("suggested_action", "unknown")
-            
+
             # Priority and severity indicators
-            priority_emoji = "🔴" if priority == "high" else "🟡" if priority == "medium" else "🟢"
+            priority_emoji = (
+                "🔴" if priority == "high" else "🟡" if priority == "medium" else "🟢"
+            )
             severity_emoji = "🔴" if severity >= 4 else "🟡" if severity >= 3 else "🟢"
-            
+
             # Action emoji
             action_emoji = {
                 "create_issue": "📝",
-                "notify_owner": "📢", 
+                "notify_owner": "📢",
                 "auto_fix": "🔧",
-                "no_action": "⏸️"
+                "no_action": "⏸️",
             }.get(suggested_action, "❓")
-            
+
             with st.expander(
                 f"{priority_emoji} {action_emoji} {approval.get('issue_type', 'Unknown')} - {approval.get('table_name', 'Unknown')}",
-                expanded=i < 3  # Expand first 3 by default
+                expanded=i < 3,  # Expand first 3 by default
             ):
                 col1, col2 = st.columns(2)
-                
+
                 with col1:
                     st.write(f"**Dataset ID:** {approval.get('dataset_id')}")
                     st.write(f"**Table:** {approval.get('table_name', 'Unknown')}")
@@ -1124,32 +1298,38 @@ def show_pending_approvals():
                     st.write(f"**Issue Type:** {approval.get('issue_type', 'Unknown')}")
                     st.write(f"**Severity:** {severity_emoji} {severity}/5")
                     st.write(f"**Priority:** {priority_emoji} {priority.title()}")
-                
+
                 with col2:
-                    st.write(f"**Suggested Action:** {action_emoji} {suggested_action.replace('_', ' ').title()}")
+                    st.write(
+                        f"**Suggested Action:** {action_emoji} {suggested_action.replace('_', ' ').title()}"
+                    )
                     st.write(f"**Detected:** {approval.get('detected_at', 'Unknown')}")
-                    st.write(f"**Description:** {approval.get('description', 'No description')}")
-                
+                    st.write(
+                        f"**Description:** {approval.get('description', 'No description')}"
+                    )
+
                 # AI Explanation
                 if approval.get("llm_explanation"):
                     st.markdown("**🤖 AI Explanation:**")
                     st.info(approval.get("llm_explanation"))
-                
+
                 # Suggested SQL
                 if approval.get("suggested_sql"):
                     st.markdown("**💻 Suggested SQL Fix:**")
                     st.code(approval.get("suggested_sql"), language="sql")
-                
+
                 # Action buttons
                 st.markdown("---")
                 col1, col2, col3, col4 = st.columns(4)
-                
+
                 with col1:
-                    if st.button(f"✅ Approve", key=f"approve_{anomaly_id}", type="primary"):
+                    if st.button(
+                        f"✅ Approve", key=f"approve_{anomaly_id}", type="primary"
+                    ):
                         try:
                             response = requests.post(
                                 f"{API_BASE_URL}/agent/approve/{anomaly_id}",
-                                json={"approved": True, "approved_by": "human"}
+                                json={"approved": True, "approved_by": "human"},
                             )
                             if response.status_code == 200:
                                 st.success("✅ Action approved and executed!")
@@ -1158,13 +1338,13 @@ def show_pending_approvals():
                                 st.error(f"❌ Failed to approve: {response.text}")
                         except Exception as e:
                             st.error(f"❌ Error: {e}")
-                
+
                 with col2:
                     if st.button(f"❌ Reject", key=f"reject_{anomaly_id}"):
                         try:
                             response = requests.post(
                                 f"{API_BASE_URL}/agent/approve/{anomaly_id}",
-                                json={"approved": False, "approved_by": "human"}
+                                json={"approved": False, "approved_by": "human"},
                             )
                             if response.status_code == 200:
                                 st.success("❌ Action rejected!")
@@ -1173,13 +1353,13 @@ def show_pending_approvals():
                                 st.error(f"❌ Failed to reject: {response.text}")
                         except Exception as e:
                             st.error(f"❌ Error: {e}")
-                
+
                 with col3:
                     if st.button(f"🔍 Get AI Explanation", key=f"explain_{anomaly_id}"):
                         try:
                             response = requests.post(
                                 f"{API_BASE_URL}/agent/explain",
-                                json={"anomaly_id": anomaly_id}
+                                json={"anomaly_id": anomaly_id},
                             )
                             if response.status_code == 200:
                                 st.success("🤖 AI explanation generated!")
@@ -1188,11 +1368,11 @@ def show_pending_approvals():
                                 st.error("❌ Failed to generate explanation")
                         except Exception as e:
                             st.error(f"❌ Error: {e}")
-                
+
                 with col4:
                     if st.button(f"📊 View Details", key=f"details_{anomaly_id}"):
                         st.info("Navigate to Anomalies page to view full details")
-    
+
     except Exception as e:
         st.error(f"Failed to fetch pending approvals: {e}")
 
