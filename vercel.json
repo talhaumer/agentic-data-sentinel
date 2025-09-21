@@ -6,7 +6,8 @@
       "use": "@vercel/python",
       "config": {
         "maxLambdaSize": "50mb",
-        "includeFiles": "requirements.txt"
+        "includeFiles": "requirements.txt",
+        "maxDuration": 30
       }
     }
   ],
@@ -26,10 +27,5 @@
     "LLM_PROVIDER": "groq",
     "GROQ_API_KEY": "",
     "SECRET_KEY": ""
-  },
-  "functions": {
-    "api/index.py": {
-      "maxDuration": 30
-    }
   }
 }
