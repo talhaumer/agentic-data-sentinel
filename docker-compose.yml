@@ -9,13 +9,13 @@ services:
     volumes:
       - ./data:/app/data
       - ./logs:/app/logs
-    environment:
-      - DATABASE_URL=sqlite:////app/data/sentinel.db
-      - DW_CONN_STRING=sqlite:///./data/dw.db
-      - LLM_PROVIDER=groq
-      - LLM_API_KEY=REMOVED
-      - SECRET_KEY=your-secret-key-change-this-in-production
-      - DEBUG=True
+    # environment:
+    #   - DATABASE_URL=sqlite:////app/data/sentinel.db
+    #   - DW_CONN_STRING=sqlite:///./data/dw.db
+    #   - LLM_PROVIDER=groq
+    #   - LLM_API_KEY=REMOVED
+    #   - SECRET_KEY=your-secret-key-change-this-in-production
+    #   - DEBUG=True
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
