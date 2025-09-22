@@ -1262,21 +1262,90 @@ def show_langgraph_visualization():
             st.error(f"Error rendering graph: {e}")
             graphviz_available = False
     
+    # Always show the enhanced visual representation
     if not graphviz_available:
-        # Fallback to a simple text representation
-        st.markdown("""
-        ### Workflow Steps:
-        1. **🚀 Start** → **📁 Fetch Dataset**
-        2. **📁 Fetch Dataset** → **✅ Validate Data**
-        3. **✅ Validate Data** → **🔍 Detect Anomalies**
-        4. **🔍 Detect Anomalies** → **🤖 Explain Anomalies**
-        5. **🤖 Explain Anomalies** → **📋 Plan Actions**
-        6. **📋 Plan Actions** → **⚡ Execute Actions**
-        7. **⚡ Execute Actions** → **🏁 End**
+        st.markdown("### 🕸️ LangGraph Workflow Diagram")
         
-        ### Error Handling:
-        Any step can redirect to **❌ Handle Error** if something goes wrong.
-        """)
+        # Create a visual representation using Streamlit components
+        col1, col2, col3 = st.columns([1, 2, 1])
+        
+        with col2:
+            # Main workflow flow
+            st.markdown("""
+            <div style="text-align: center; margin: 20px 0;">
+                <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+                           color: white; padding: 15px; border-radius: 10px; margin: 10px 0; 
+                           box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+                    <h3>🚀 Start</h3>
+                </div>
+                <div style="font-size: 24px; margin: 10px 0;">⬇️</div>
+                <div style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); 
+                           color: white; padding: 15px; border-radius: 10px; margin: 10px 0; 
+                           box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+                    <h3>📁 Fetch Dataset</h3>
+                    <p>• Load dataset metadata<br>• Verify dataset exists</p>
+                </div>
+                <div style="font-size: 24px; margin: 10px 0;">⬇️</div>
+                <div style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); 
+                           color: white; padding: 15px; border-radius: 10px; margin: 10px 0; 
+                           box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+                    <h3>✅ Validate Data</h3>
+                    <p>• Run quality checks<br>• Calculate health score</p>
+                </div>
+                <div style="font-size: 24px; margin: 10px 0;">⬇️</div>
+                <div style="background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%); 
+                           color: #333; padding: 15px; border-radius: 10px; margin: 10px 0; 
+                           box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+                    <h3>🔍 Detect Anomalies</h3>
+                    <p>• Identify data issues<br>• Categorize by severity</p>
+                </div>
+                <div style="font-size: 24px; margin: 10px 0;">⬇️</div>
+                <div style="background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%); 
+                           color: #333; padding: 15px; border-radius: 10px; margin: 10px 0; 
+                           box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+                    <h3>🤖 Explain Anomalies</h3>
+                    <p>• Generate LLM explanations<br>• Suggest remediation</p>
+                </div>
+                <div style="font-size: 24px; margin: 10px 0;">⬇️</div>
+                <div style="background: linear-gradient(135deg, #d299c2 0%, #fef9d7 100%); 
+                           color: #333; padding: 15px; border-radius: 10px; margin: 10px 0; 
+                           box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+                    <h3>📋 Plan Actions</h3>
+                    <p>• Determine remediation steps<br>• Check approval requirements</p>
+                </div>
+                <div style="font-size: 24px; margin: 10px 0;">⬇️</div>
+                <div style="background: linear-gradient(135deg, #89f7fe 0%, #66a6ff 100%); 
+                           color: white; padding: 15px; border-radius: 10px; margin: 10px 0; 
+                           box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+                    <h3>⚡ Execute Actions</h3>
+                    <p>• Create issues (Jira/GitHub)<br>• Send notifications (Slack)<br>• Auto-fix when possible</p>
+                </div>
+                <div style="font-size: 24px; margin: 10px 0;">⬇️</div>
+                <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+                           color: white; padding: 15px; border-radius: 10px; margin: 10px 0; 
+                           box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
+                    <h3>🏁 End</h3>
+                </div>
+            </div>
+            """, unsafe_allow_html=True)
+            
+            # Error handling section
+            st.markdown("---")
+            st.markdown("### ❌ Error Handling")
+            st.markdown("""
+            <div style="text-align: center; margin: 20px 0;">
+                <div style="background: linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%); 
+                           color: #333; padding: 15px; border-radius: 10px; margin: 10px 0; 
+                           box-shadow: 0 4px 15px rgba(0,0,0,0.1); border: 2px dashed #ff6b6b;">
+                    <h3>❌ Handle Error</h3>
+                    <p>• Log error details<br>• Update run status<br>• Graceful degradation</p>
+                </div>
+                <p style="color: #666; font-style: italic;">
+                    Any step can redirect to error handling if something goes wrong
+                </p>
+            </div>
+            """, unsafe_allow_html=True)
+    
     
     # Add workflow statistics
     st.markdown("---")
