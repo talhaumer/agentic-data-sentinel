@@ -1,4 +1,4 @@
-"""MCP (Model Context Protocol) service for external integrations."""
+"""MCP (Model Context Protocol) service for GitHub integration only."""
 
 import httpx
 from typing import Dict, Any, Optional
@@ -11,177 +11,96 @@ logger = structlog.get_logger(__name__)
 
 
 class MCPService:
-    """Service for MCP-based external integrations."""
+    """Service for MCP-based GitHub integration."""
 
     def __init__(self):
         self.settings = get_settings()
-
-    async def send_notification(
-        self, channel: str, message: str, priority: str = "medium"
-    ) -> Dict[str, Any]:
-        """Send notification via Slack."""
-        try:
-            if not self.settings.slack_webhook_url:
-                logger.warning("Slack webhook URL not configured")
-                return {"success": False, "message": "Slack not configured"}
-
-            payload = {
-                "channel": channel,
-                "text": message,
-                "username": "Data Sentinel",
-                "icon_emoji": ":robot_face:",
-                "attachments": [
-                    {
-                        "color": "warning" if priority == "high" else "good",
-                        "fields": [
-                            {
-                                "title": "Priority",
-                                "value": priority.upper(),
-                                "short": True,
-                            }
-                        ],
-                    }
-                ],
-            }
-
-            async with httpx.AsyncClient() as client:
-                response = await client.post(
-                    self.settings.slack_webhook_url, json=payload, timeout=10.0
-                )
-
-                if response.status_code == 200:
-                    logger.info(
-                        "Slack notification sent", channel=channel, priority=priority
-                    )
-                    return {
-                        "success": True,
-                        "message": "Notification sent successfully",
-                    }
-                else:
-                    logger.error(
-                        "Slack notification failed", status_code=response.status_code
-                    )
-                    return {
-                        "success": False,
-                        "message": f"Slack API error: {response.status_code}",
-                    }
-
-        except Exception as e:
-            logger.error("Failed to send Slack notification", error=str(e))
-            return {"success": False, "error": str(e)}
-
-    async def create_issue(
-        self,
-        title: str,
-        description: str,
-        priority: str = "medium",
-        assignee: Optional[str] = None,
-    ) -> Dict[str, Any]:
-        """Create issue in Jira."""
-        try:
-            if not all(
-                [
-                    self.settings.jira_base_url,
-                    self.settings.jira_username,
-                    self.settings.jira_api_token,
-                ]
-            ):
-                logger.warning("Jira credentials not configured")
-                return {"success": False, "message": "Jira not configured"}
-
-            # Map priority to Jira priority
-            priority_map = {
-                "low": "Lowest",
-                "medium": "Medium",
-                "high": "High",
-                "critical": "Highest",
-            }
-
-            jira_priority = priority_map.get(priority, "Medium")
-
-            payload = {
-                "fields": {
-                    "project": {"key": "DATA"},  # Assuming DATA project exists
-                    "summary": title,
-                    "description": description,
-                    "issuetype": {"name": "Bug"},
-                    "priority": {"name": jira_priority},
-                }
-            }
-
-            if assignee:
-                payload["fields"]["assignee"] = {"name": assignee}
-
-            auth = (self.settings.jira_username, self.settings.jira_api_token)
-
-            async with httpx.AsyncClient() as client:
-                response = await client.post(
-                    f"{self.settings.jira_base_url}/rest/api/2/issue",
-                    json=payload,
-                    auth=auth,
-                    timeout=30.0,
-                )
-
-                if response.status_code == 201:
-                    issue_data = response.json()
-                    issue_key = issue_data.get("key")
-                    logger.info(
-                        "Jira issue created", issue_key=issue_key, priority=priority
-                    )
-                    return {
-                        "success": True,
-                        "message": "Issue created successfully",
-                        "issue_key": issue_key,
-                        "issue_url": f"{self.settings.jira_base_url}/browse/{issue_key}",
-                    }
-                else:
-                    logger.error(
-                        "Jira issue creation failed", status_code=response.status_code
-                    )
-                    return {
-                        "success": False,
-                        "message": f"Jira API error: {response.status_code}",
-                    }
-
-        except Exception as e:
-            logger.error("Failed to create Jira issue", error=str(e))
-            return {"success": False, "error": str(e)}
 
     async def create_github_issue(
         self, repo: str, title: str, description: str, labels: Optional[list] = None
     ) -> Dict[str, Any]:
         """Create issue in GitHub."""
         try:
-            # This would require GitHub API token configuration
-            logger.info("GitHub issue creation not implemented", repo=repo, title=title)
-            return {"success": False, "message": "GitHub integration not implemented"}
+            if not all([
+                self.settings.github_token,
+                self.settings.github_owner,
+                self.settings.github_repo
+            ]):
+                logger.warning("GitHub credentials not configured")
+                return {"success": False, "message": "GitHub not configured"}
 
+            # Use configured repo or the provided one
+            target_repo = repo or f"{self.settings.github_owner}/{self.settings.github_repo}"
+            
+            headers = {
+                "Authorization": f"token {self.settings.github_token}",
+                "Accept": "application/vnd.github.v3+json"
+            }
+            
+            payload = {
+                "title": title,
+                "body": description
+            }
+            
+            if labels:
+                payload["labels"] = labels
+            else:
+                # Default labels for data quality issues
+                payload["labels"] = ["data-quality", "bug", "automated"]
+            
+            async with httpx.AsyncClient() as client:
+                response = await client.post(
+                    f"https://api.github.com/repos/{target_repo}/issues",
+                    headers=headers,
+                    json=payload,
+                    timeout=30.0
+                )
+                
+                if response.status_code == 201:
+                    issue_data = response.json()
+                    logger.info("GitHub issue created successfully", 
+                              issue_number=issue_data.get("number"),
+                              repo=target_repo)
+                    return {
+                        "success": True,
+                        "issue_number": issue_data.get("number"),
+                        "issue_url": issue_data.get("html_url"),
+                        "message": "Issue created successfully"
+                    }
+                else:
+                    logger.error("GitHub issue creation failed", 
+                               status_code=response.status_code,
+                               response=response.text)
+                    return {
+                        "success": False,
+                        "error": f"GitHub API error: {response.status_code}",
+                        "message": response.text
+                    }
+                    
         except Exception as e:
             logger.error("Failed to create GitHub issue", error=str(e))
             return {"success": False, "error": str(e)}
 
-    async def trigger_dag_run(
-        self, dag_id: str, conf: Optional[Dict[str, Any]] = None
-    ) -> Dict[str, Any]:
-        """Trigger Airflow DAG run."""
+    async def execute_mcp_action(self, mcp_action: Dict[str, Any]) -> Dict[str, Any]:
+        """Execute MCP action based on tool type."""
         try:
-            # This would require Airflow API configuration
-            logger.info("Airflow DAG trigger not implemented", dag_id=dag_id)
-            return {"success": False, "message": "Airflow integration not implemented"}
-
+            tool = mcp_action.get("tool")
+            action = mcp_action.get("action")
+            payload = mcp_action.get("payload", {})
+            
+            if tool == "github":
+                if action == "create_issue":
+                    return await self.create_github_issue(
+                        repo=payload.get("repo"),
+                        title=payload.get("title"),
+                        description=payload.get("description"),
+                        labels=payload.get("labels")
+                    )
+                else:
+                    return {"success": False, "error": f"Unknown GitHub action: {action}"}
+            else:
+                return {"success": False, "error": f"Unknown tool: {tool}. Supported tools: github"}
+                
         except Exception as e:
-            logger.error("Failed to trigger DAG", dag_id=dag_id, error=str(e))
-            return {"success": False, "error": str(e)}
-
-    async def send_email(
-        self, to: str, subject: str, body: str, priority: str = "normal"
-    ) -> Dict[str, Any]:
-        """Send email notification."""
-        try:
-            # This would require email service configuration (SendGrid, SES, etc.)
-            logger.info("Email sending not implemented", to=to, subject=subject)
-            return {"success": False, "message": "Email integration not implemented"}
-
-        except Exception as e:
-            logger.error("Failed to send email", error=str(e))
+            logger.error("Failed to execute MCP action", error=str(e))
             return {"success": False, "error": str(e)}

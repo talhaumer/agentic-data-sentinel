@@ -95,12 +95,18 @@ class ValidationService:
             # Parse source URL to extract file path
             file_path = self._parse_source_path(dataset.source)
 
-            # Check if source is a parquet file
+            # Check file type and route to appropriate handler
             if file_path and file_path.endswith(".parquet"):
                 return await self._sample_from_parquet(dataset, file_path)
-
-            # Otherwise try to find a SQL table
-            return await self._sample_from_sql(dataset, db)
+            elif file_path and file_path.endswith(".csv"):
+                return await self._sample_from_csv(dataset, file_path)
+            elif file_path and file_path.endswith(".json"):
+                return await self._sample_from_json(dataset, file_path)
+            elif file_path and file_path.endswith((".xlsx", ".xls")):
+                return await self._sample_from_excel(dataset, file_path)
+            else:
+                # Otherwise try to find a SQL table
+                return await self._sample_from_sql(dataset, db)
 
         except Exception as e:
             logger.error("Failed to sample data", dataset_id=dataset.id, error=str(e))
@@ -156,6 +162,87 @@ class ValidationService:
                 "Failed to read parquet file", source=dataset.source, error=str(e)
             )
             print(f"Error reading parquet: {e}")
+            return None
+
+    async def _sample_from_csv(
+        self, dataset: Dataset, file_path: str = None
+    ) -> Optional[pd.DataFrame]:
+        """Sample data from CSV file."""
+        try:
+            from pathlib import Path
+
+            actual_path = file_path or dataset.source
+            source_path = Path(actual_path)
+            print(f"CSV source path: {source_path}")
+
+            if not source_path.exists():
+                logger.warning("CSV file not found", source=actual_path)
+                print(f"CSV file not found: {source_path.absolute()}")
+                return None
+
+            sample_data = pd.read_csv(actual_path)
+            print(f"Successfully read {len(sample_data)} rows from CSV: {dataset.source}")
+            return sample_data
+
+        except Exception as e:
+            logger.error("Failed to read CSV file", source=dataset.source, error=str(e))
+            print(f"Error reading CSV: {e}")
+            return None
+
+    async def _sample_from_json(
+        self, dataset: Dataset, file_path: str = None
+    ) -> Optional[pd.DataFrame]:
+        """Sample data from JSON file."""
+        try:
+            from pathlib import Path
+
+            actual_path = file_path or dataset.source
+            source_path = Path(actual_path)
+            print(f"JSON source path: {source_path}")
+
+            if not source_path.exists():
+                logger.warning("JSON file not found", source=actual_path)
+                print(f"JSON file not found: {source_path.absolute()}")
+                return None
+
+            # Try to read as JSON array first, then as JSON lines
+            try:
+                sample_data = pd.read_json(actual_path)
+            except ValueError:
+                # If that fails, try reading as JSON lines
+                sample_data = pd.read_json(actual_path, lines=True)
+            
+            print(f"Successfully read {len(sample_data)} rows from JSON: {dataset.source}")
+            return sample_data
+
+        except Exception as e:
+            logger.error("Failed to read JSON file", source=dataset.source, error=str(e))
+            print(f"Error reading JSON: {e}")
+            return None
+
+    async def _sample_from_excel(
+        self, dataset: Dataset, file_path: str = None
+    ) -> Optional[pd.DataFrame]:
+        """Sample data from Excel file."""
+        try:
+            from pathlib import Path
+
+            actual_path = file_path or dataset.source
+            source_path = Path(actual_path)
+            print(f"Excel source path: {source_path}")
+
+            if not source_path.exists():
+                logger.warning("Excel file not found", source=actual_path)
+                print(f"Excel file not found: {source_path.absolute()}")
+                return None
+
+            sample_data = pd.read_excel(actual_path)
+            print(f"Successfully read {len(sample_data)} rows from Excel: {dataset.source}")
+            return sample_data
+
+        except Exception as e:
+            logger.error("Failed to read Excel file", source=dataset.source, error=str(e))
+            print(f"Error reading Excel: {e}")
             return None
 
     async def _sample_from_sql(

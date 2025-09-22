@@ -30,15 +30,19 @@ def setup_environment():
     env_file = Path(".env")
     if not env_file.exists():
         print("📝 Creating .env file from template...")
-        with open("env.simple", "r") as f:
-            content = f.read()
-        with open(".env", "w") as f:
-            f.write(content)
-        print(
-            "⚠️  Please edit .env file with your configuration (especially LLM_API_KEY)"
-        )
-        print("   Choose between OpenAI or Groq (Groq is faster & cheaper)")
-        return False
+        if Path("env.example").exists():
+            with open("env.example", "r") as f:
+                content = f.read()
+            with open(".env", "w") as f:
+                f.write(content)
+            print(
+                "⚠️  Please edit .env file with your configuration (especially LLM_API_KEY)"
+            )
+            print("   Choose between OpenAI or Groq (Groq is faster & cheaper)")
+            return False
+        else:
+            print("❌ No env.example file found. Please create .env file manually.")
+            return False
     return True
 
 

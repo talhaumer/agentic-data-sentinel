@@ -234,7 +234,7 @@ class NotificationRequest(BaseSchema):
     channel: str = Field(..., min_length=1, max_length=255)
     message: str = Field(..., min_length=1, max_length=2000)
     priority: str = Field("medium", pattern="^(low|medium|high|critical)$")
-    platform: str = Field("slack", pattern="^(slack|email)$")
+    platform: str = Field("email", pattern="^(email)$")
 
 
 class IssueRequest(BaseSchema):
@@ -243,7 +243,7 @@ class IssueRequest(BaseSchema):
     title: str = Field(..., min_length=1, max_length=255)
     description: str = Field(..., min_length=1, max_length=5000)
     priority: str = Field("medium", pattern="^(low|medium|high|critical)$")
-    platform: str = Field("jira", pattern="^(jira|github)$")
+    platform: str = Field("github", pattern="^(github)$")
     assignee: Optional[str] = Field(None, max_length=255)
     labels: Optional[list] = Field(None)
 

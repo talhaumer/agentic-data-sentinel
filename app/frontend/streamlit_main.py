@@ -1218,7 +1218,7 @@ def show_langgraph_visualization():
             'detect_anomalies': {'label': '🔍 Detect Anomalies\n• Identify data issues\n• Categorize by severity', 'fillcolor': 'lightcoral'},
             'explain_anomalies': {'label': '🤖 Explain Anomalies\n• Generate LLM explanations\n• Suggest remediation', 'fillcolor': 'lightpink'},
             'plan_actions': {'label': '📋 Plan Actions\n• Determine remediation steps\n• Check approval requirements', 'fillcolor': 'lightcyan'},
-            'execute_actions': {'label': '⚡ Execute Actions\n• Create issues (Jira/GitHub)\n• Send notifications (Slack)\n• Auto-fix when possible', 'fillcolor': 'lightsteelblue'},
+            'execute_actions': {'label': '⚡ Execute Actions\n• Create issues (GitHub)\n• Send notifications (Email)\n• Auto-fix when possible', 'fillcolor': 'lightsteelblue'},
             'handle_error': {'label': '❌ Handle Error\n• Log error details\n• Update run status', 'fillcolor': 'lightgray'},
             'end': {'label': '🏁 End', 'fillcolor': 'lightgreen'}
         }
@@ -1318,7 +1318,7 @@ def show_langgraph_visualization():
                            color: white; padding: 15px; border-radius: 10px; margin: 10px 0; 
                            box-shadow: 0 4px 15px rgba(0,0,0,0.1);">
                     <h3>⚡ Execute Actions</h3>
-                    <p>• Create issues (Jira/GitHub)<br>• Send notifications (Slack)<br>• Auto-fix when possible</p>
+                    <p>• Create issues (GitHub)<br>• Send notifications (Email)<br>• Auto-fix when possible</p>
                 </div>
                 <div style="font-size: 24px; margin: 10px 0;">⬇️</div>
                 <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
@@ -1641,7 +1641,7 @@ def show_settings():
 
     st.subheader("External Integrations")
     st.info(
-        "Configure Slack, Jira, and other integrations in the environment variables."
+        "Configure Email and GitHub integrations in the environment variables."
     )
 
 

@@ -28,19 +28,18 @@ class Settings(BaseSettings):
     access_token_expire_minutes: int = Field(30, env="ACCESS_TOKEN_EXPIRE_MINUTES")
 
     # External Integrations
-    slack_webhook_url: Optional[str] = Field(None, env="SLACK_WEBHOOK_URL")
-    jira_base_url: Optional[str] = Field(None, env="JIRA_BASE_URL")
-    jira_username: Optional[str] = Field(None, env="JIRA_USERNAME")
-    jira_api_token: Optional[str] = Field(None, env="JIRA_API_TOKEN")
+    
+    # Email Integration
+    gmail_email: Optional[str] = Field(None, env="GMAIL_EMAIL")
+    gmail_password: Optional[str] = Field(None, env="GMAIL_PASSWORD")
+    sendgrid_api_key: Optional[str] = Field(None, env="SENDGRID_API_KEY")
+    from_email: Optional[str] = Field(None, env="FROM_EMAIL")
     
     # GitHub Integration
     github_token: Optional[str] = Field(None, env="GITHUB_TOKEN")
     github_owner: Optional[str] = Field(None, env="GITHUB_OWNER")
     github_repo: Optional[str] = Field(None, env="GITHUB_REPO")
     
-    # Email Integration
-    sendgrid_api_key: Optional[str] = Field(None, env="SENDGRID_API_KEY")
-    from_email: Optional[str] = Field(None, env="FROM_EMAIL")
     
     # LangChain Tracing
     langchain_api_key: Optional[str] = Field(None, env="LANGCHAIN_API_KEY")
@@ -56,7 +55,6 @@ class Settings(BaseSettings):
 
     # Monitoring
     prometheus_port: int = Field(8001, env="PROMETHEUS_PORT")
-    sentry_dsn: Optional[str] = Field(None, env="SENTRY_DSN")
 
     # Data Warehouse Settings
     dw_sample_size: int = Field(10000, env="DW_SAMPLE_SIZE")

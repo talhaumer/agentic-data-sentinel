@@ -314,17 +314,18 @@ class SimpleAgentService:
                     suggested_action = self._get_suggested_action_from_anomaly(anomaly)
 
                     if suggested_action == "create_issue":
-                        result = await self.mcp_service.create_issue(
+                        result = await self.mcp_service.create_github_issue(
+                            repo=None,  # Use default repo from config
                             title=f"Data Quality Issue: {anomaly.issue_type}",
                             description=anomaly.description,
-                            priority="high" if anomaly.severity >= 4 else "medium",
+                            labels=["data-quality", "bug", "automated"]
                         )
                     elif suggested_action == "notify_owner":
-                        result = await self.mcp_service.send_notification(
-                            channel="#data-quality",
-                            message=f"Data quality issue detected: {anomaly.description}",
-                            priority="high" if anomaly.severity >= 4 else "medium",
-                        )
+                        # For now, just log the notification since we don't have email configured
+                        result = {"success": True, "message": "Notification logged (email not configured)"}
+                        logger.info("Data quality notification", 
+                                  anomaly_id=anomaly_id, 
+                                  description=anomaly.description)
                     elif suggested_action == "auto_fix":
                         result = await self._attempt_auto_fix(anomaly, None)
                     else:
