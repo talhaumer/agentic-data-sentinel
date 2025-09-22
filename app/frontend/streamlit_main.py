@@ -870,8 +870,8 @@ def show_agent_workflows():
     st.header("🤖 Agent Workflows")
 
     # Add tabs for better organization
-    tab1, tab2, tab3 = st.tabs(
-        ["🚀 Trigger Workflow", "📊 Workflow Status", "📈 Analytics"]
+    tab1, tab2, tab3, tab4 = st.tabs(
+        ["🚀 Trigger Workflow", "📊 Workflow Status", "📈 Analytics", "🕸️ LangGraph Visualization"]
     )
 
     with tab1:
@@ -1181,6 +1181,178 @@ def show_agent_workflows():
 
         else:
             st.info("No runs available for analytics.")
+
+    with tab4:
+        show_langgraph_visualization()
+
+
+def show_langgraph_visualization():
+    """Show LangGraph workflow visualization."""
+    st.subheader("🕸️ LangGraph Workflow Visualization")
+    
+    st.markdown("""
+    This diagram shows the LangGraph workflow that powers Data Sentinel's agentic data quality monitoring.
+    Each node represents a step in the automated process, and arrows show the flow of data and decisions.
+    """)
+    
+    # Create a visual representation of the LangGraph workflow
+    try:
+        import graphviz
+        graphviz_available = True
+    except ImportError:
+        graphviz_available = False
+        st.warning("⚠️ Graphviz not available. Showing text-based workflow representation.")
+    
+    if graphviz_available:
+        # Create a new graph
+        dot = graphviz.Digraph(comment='Data Sentinel LangGraph Workflow')
+        dot.attr(rankdir='TB', size='12,8')
+        dot.attr('node', shape='box', style='rounded,filled', fillcolor='lightblue', fontname='Arial')
+        dot.attr('edge', fontname='Arial', fontsize='10')
+        
+        # Define nodes with descriptions
+        nodes = {
+            'start': {'label': '🚀 Start', 'fillcolor': 'lightgreen'},
+            'fetch_dataset': {'label': '📁 Fetch Dataset\n• Load dataset metadata\n• Verify dataset exists', 'fillcolor': 'lightblue'},
+            'validate_data': {'label': '✅ Validate Data\n• Run quality checks\n• Calculate health score', 'fillcolor': 'lightyellow'},
+            'detect_anomalies': {'label': '🔍 Detect Anomalies\n• Identify data issues\n• Categorize by severity', 'fillcolor': 'lightcoral'},
+            'explain_anomalies': {'label': '🤖 Explain Anomalies\n• Generate LLM explanations\n• Suggest remediation', 'fillcolor': 'lightpink'},
+            'plan_actions': {'label': '📋 Plan Actions\n• Determine remediation steps\n• Check approval requirements', 'fillcolor': 'lightcyan'},
+            'execute_actions': {'label': '⚡ Execute Actions\n• Create issues (Jira/GitHub)\n• Send notifications (Slack)\n• Auto-fix when possible', 'fillcolor': 'lightsteelblue'},
+            'handle_error': {'label': '❌ Handle Error\n• Log error details\n• Update run status', 'fillcolor': 'lightgray'},
+            'end': {'label': '🏁 End', 'fillcolor': 'lightgreen'}
+        }
+        
+        # Add nodes
+        for node_id, attrs in nodes.items():
+            dot.node(node_id, attrs['label'], fillcolor=attrs['fillcolor'])
+        
+        # Add edges (workflow flow)
+        edges = [
+            ('start', 'fetch_dataset'),
+            ('fetch_dataset', 'validate_data'),
+            ('validate_data', 'detect_anomalies'),
+            ('detect_anomalies', 'explain_anomalies'),
+            ('explain_anomalies', 'plan_actions'),
+            ('plan_actions', 'execute_actions'),
+            ('execute_actions', 'end'),
+            # Error handling edges
+            ('fetch_dataset', 'handle_error'),
+            ('validate_data', 'handle_error'),
+            ('detect_anomalies', 'handle_error'),
+            ('explain_anomalies', 'handle_error'),
+            ('plan_actions', 'handle_error'),
+            ('execute_actions', 'handle_error'),
+            ('handle_error', 'end')
+        ]
+        
+        # Add edges with labels
+        for start, end in edges:
+            if end == 'handle_error':
+                dot.edge(start, end, label='Error', color='red', style='dashed')
+            elif start == 'handle_error':
+                dot.edge(start, end, label='Continue', color='gray')
+            else:
+                dot.edge(start, end, color='blue')
+        
+        # Display the graph
+        try:
+            st.graphviz_chart(dot.source)
+        except Exception as e:
+            st.error(f"Error rendering graph: {e}")
+            graphviz_available = False
+    
+    if not graphviz_available:
+        # Fallback to a simple text representation
+        st.markdown("""
+        ### Workflow Steps:
+        1. **🚀 Start** → **📁 Fetch Dataset**
+        2. **📁 Fetch Dataset** → **✅ Validate Data**
+        3. **✅ Validate Data** → **🔍 Detect Anomalies**
+        4. **🔍 Detect Anomalies** → **🤖 Explain Anomalies**
+        5. **🤖 Explain Anomalies** → **📋 Plan Actions**
+        6. **📋 Plan Actions** → **⚡ Execute Actions**
+        7. **⚡ Execute Actions** → **🏁 End**
+        
+        ### Error Handling:
+        Any step can redirect to **❌ Handle Error** if something goes wrong.
+        """)
+    
+    # Add workflow statistics
+    st.markdown("---")
+    st.subheader("📊 Workflow Statistics")
+    
+    col1, col2, col3, col4 = st.columns(4)
+    
+    with col1:
+        st.metric("Total Nodes", "8", "6 workflow + 2 control")
+    
+    with col2:
+        st.metric("Workflow Steps", "6", "Main process steps")
+    
+    with col3:
+        st.metric("Error Handling", "Yes", "Comprehensive error management")
+    
+    with col4:
+        st.metric("Async Execution", "Yes", "Non-blocking operations")
+    
+    # Add technical details
+    st.markdown("---")
+    st.subheader("🔧 Technical Details")
+    
+    with st.expander("LangGraph Implementation Details"):
+        st.markdown("""
+        **Framework**: LangGraph StateGraph
+        **State Management**: TypedDict with comprehensive state tracking
+        **Execution**: Async/await pattern for non-blocking operations
+        **Error Handling**: Dedicated error node with graceful degradation
+        **Integration**: Seamless integration with existing services
+        
+        **Key Features**:
+        - Stateful workflow execution
+        - Conditional edge routing
+        - Error recovery mechanisms
+        - Service integration (Validation, LLM, MCP)
+        - Metrics collection and logging
+        """)
+    
+    with st.expander("Node Descriptions"):
+        st.markdown("""
+        **📁 Fetch Dataset**: Retrieves dataset metadata and validates existence
+        **✅ Validate Data**: Runs comprehensive data quality checks and calculates health scores
+        **🔍 Detect Anomalies**: Identifies data issues and categorizes them by severity
+        **🤖 Explain Anomalies**: Uses LLM to generate human-readable explanations and suggestions
+        **📋 Plan Actions**: Determines appropriate remediation steps and approval requirements
+        **⚡ Execute Actions**: Performs actual remediation (notifications, issue creation, auto-fixes)
+        **❌ Handle Error**: Manages errors gracefully and updates run status
+        """)
+    
+    # Add real-time workflow status
+    st.markdown("---")
+    st.subheader("🔄 Real-time Workflow Status")
+    
+    if st.button("🔄 Refresh Workflow Status"):
+        st.rerun()
+    
+    # Show recent workflow runs
+    try:
+        runs_data = fetch_data("runs/")
+        if runs_data:
+            recent_runs = sorted(runs_data, key=lambda x: x.get('run_time', ''), reverse=True)[:5]
+            
+            st.markdown("#### Recent Workflow Executions:")
+            for run in recent_runs:
+                status_emoji = "✅" if run.get('status') == 'completed' else "❌" if run.get('status') == 'failed' else "🔄"
+                st.markdown(f"""
+                {status_emoji} **Run {run.get('id')}** - {run.get('status', 'unknown')} 
+                - Dataset: {run.get('dataset_id')} 
+                - Duration: {run.get('duration_seconds', 0):.2f}s
+                - Time: {run.get('run_time', 'unknown')}
+                """)
+        else:
+            st.info("No workflow runs found. Trigger a workflow to see execution history.")
+    except Exception as e:
+        st.error(f"Error fetching workflow status: {e}")
 
 
 def show_pending_approvals():
