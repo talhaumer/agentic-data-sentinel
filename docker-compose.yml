@@ -13,9 +13,24 @@ services:
       - DATABASE_URL=sqlite:////app/data/sentinel.db
       - DW_CONN_STRING=sqlite:///./data/dw.db
       - LLM_PROVIDER=groq
-      - LLM_API_KEY=${LLM_API_KEY}
-      - SECRET_KEY=${SECRET_KEY}
+      - LLM_API_KEY=${LLM_API_KEY:-test}
+      - SECRET_KEY=${SECRET_KEY:-your-secret-key-here}
       - DEBUG=True
+      # External API Integrations (Optional)
+      - SLACK_WEBHOOK_URL=${SLACK_WEBHOOK_URL:-}
+      - JIRA_BASE_URL=${JIRA_BASE_URL:-}
+      - JIRA_USERNAME=${JIRA_USERNAME:-}
+      - JIRA_API_TOKEN=${JIRA_API_TOKEN:-}
+      - GITHUB_TOKEN=${GITHUB_TOKEN:-}
+      - GITHUB_OWNER=${GITHUB_OWNER:-}
+      - GITHUB_REPO=${GITHUB_REPO:-}
+      - SENDGRID_API_KEY=${SENDGRID_API_KEY:-}
+      - FROM_EMAIL=${FROM_EMAIL:-}
+      # LangChain Tracing (Optional)
+      - LANGCHAIN_API_KEY=${LANGCHAIN_API_KEY:-}
+      - LANGCHAIN_TRACING_V2=${LANGCHAIN_TRACING_V2:-true}
+      - LANGCHAIN_PROJECT=${LANGCHAIN_PROJECT:-data-sentinel}
+      - ENVIRONMENT=${ENVIRONMENT:-production}
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:8000/health"]

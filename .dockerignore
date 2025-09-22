@@ -25,13 +25,10 @@ coverage.xml
 .hypothesis
 
 # Virtual environments
-.env
-.venv
-env/
 venv/
 ENV/
-env.bak/
-venv.bak/
+env/
+.venv/
 
 # IDE
 .vscode/
@@ -50,19 +47,33 @@ ehthumbs.db
 Thumbs.db
 
 # Project specific
+data/
 logs/
 *.db
 *.sqlite
 *.sqlite3
 
+# Documentation
+*.md
+docs/
+README.md
+ENVIRONMENT_SETUP.md
+
+# Test files
+test_*.py
+*_test.py
+tests/
+
 # Docker
-Dockerfile
-docker-compose.yml
+Dockerfile*
+docker-compose*.yml
 .dockerignore
 
-# Vercel
-.vercel/
-vercel.json
-api/
-package.json
-requirements-vercel.txt
+# Environment files
+.env
+.env.*
+env.*
+
+# Temporary files
+*.tmp
+*.temp
