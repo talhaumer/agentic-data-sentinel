@@ -60,6 +60,23 @@ class Settings(BaseSettings):
     dw_sample_size: int = Field(10000, env="DW_SAMPLE_SIZE")
     anomaly_threshold: float = Field(0.7, env="ANOMALY_THRESHOLD")
     health_score_threshold: float = Field(0.8, env="HEALTH_SCORE_THRESHOLD")
+    
+    # Data Quality Validation Thresholds
+    # Null rate thresholds
+    null_rate_critical: float = Field(0.01, env="NULL_RATE_CRITICAL")  # 1% for critical columns
+    null_rate_optional: float = Field(0.3, env="NULL_RATE_OPTIONAL")   # 30% for optional columns
+    null_rate_default: float = Field(0.1, env="NULL_RATE_DEFAULT")     # 10% for regular columns
+    
+    # Uniqueness thresholds
+    uniqueness_id_columns: float = Field(0.95, env="UNIQUENESS_ID")        # 95% for ID columns
+    uniqueness_categorical: float = Field(0.05, env="UNIQUENESS_CATEGORICAL")  # 5% for categorical
+    uniqueness_boolean: float = Field(0.01, env="UNIQUENESS_BOOLEAN")      # 1% for boolean
+    uniqueness_date: float = Field(0.8, env="UNIQUENESS_DATE")            # 80% for date columns
+    uniqueness_numeric: float = Field(0.7, env="UNIQUENESS_NUMERIC")      # 70% for numeric
+    uniqueness_default: float = Field(0.3, env="UNIQUENESS_DEFAULT")      # 30% for general
+    
+    # Outlier thresholds
+    outlier_threshold: float = Field(0.05, env="OUTLIER_THRESHOLD")       # 5% outlier threshold
 
     class Config:
         env_file = ".env"

@@ -1,10 +1,11 @@
 """Anomaly management endpoints."""
 
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 
 import structlog
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
+from sqlalchemy import func
 
 from app.database import get_db
 from app.models import Anomaly, Dataset
@@ -18,6 +19,7 @@ router = APIRouter()
 async def list_anomalies(
     dataset_id: Optional[int] = Query(None),
     status: Optional[str] = Query(None),
+    issue_type: Optional[str] = Query(None),
     severity_min: Optional[int] = Query(None, ge=1, le=5),
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=1000),
@@ -32,6 +34,9 @@ async def list_anomalies(
 
         if status:
             query = query.filter(Anomaly.status == status)
+
+        if issue_type:
+            query = query.filter(Anomaly.issue_type == issue_type)
 
         if severity_min:
             query = query.filter(Anomaly.severity >= severity_min)
@@ -162,3 +167,150 @@ async def resolve_anomaly(anomaly_id: int, db: Session = Depends(get_db)):
         logger.error("Failed to resolve anomaly", anomaly_id=anomaly_id, error=str(e))
         db.rollback()
         raise HTTPException(status_code=500, detail="Failed to resolve anomaly")
+
+
+@router.post("/bulk", response_model=List[AnomalySchema])
+async def create_multiple_anomalies(
+    anomalies: List[AnomalyCreate], db: Session = Depends(get_db)
+):
+    """Create multiple anomalies in a single request."""
+    try:
+        created_anomalies = []
+        
+        for anomaly_data in anomalies:
+            # Verify dataset exists
+            dataset = db.query(Dataset).filter(Dataset.id == anomaly_data.dataset_id).first()
+            if not dataset:
+                raise HTTPException(status_code=404, detail=f"Dataset {anomaly_data.dataset_id} not found")
+
+            # Create new anomaly
+            db_anomaly = Anomaly(**anomaly_data.dict())
+            db.add(db_anomaly)
+            created_anomalies.append(db_anomaly)
+
+        db.commit()
+        
+        # Refresh all created anomalies
+        for anomaly in created_anomalies:
+            db.refresh(anomaly)
+
+        logger.info("Multiple anomalies created", count=len(created_anomalies))
+        return created_anomalies
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("Failed to create multiple anomalies", error=str(e))
+        db.rollback()
+        raise HTTPException(status_code=500, detail="Failed to create multiple anomalies")
+
+
+@router.get("/stats/summary", response_model=Dict[str, Any])
+async def get_anomaly_stats(
+    dataset_id: Optional[int] = Query(None),
+    db: Session = Depends(get_db),
+):
+    """Get anomaly statistics summary."""
+    try:
+        query = db.query(Anomaly)
+        
+        if dataset_id:
+            query = query.filter(Anomaly.dataset_id == dataset_id)
+
+        # Total anomalies
+        total_anomalies = query.count()
+        
+        # Anomalies by type
+        type_stats = db.query(
+            Anomaly.issue_type,
+            func.count(Anomaly.id).label('count'),
+            func.avg(Anomaly.severity).label('avg_severity')
+        )
+        
+        if dataset_id:
+            type_stats = type_stats.filter(Anomaly.dataset_id == dataset_id)
+            
+        type_stats = type_stats.group_by(Anomaly.issue_type).all()
+        
+        # Anomalies by severity
+        severity_stats = db.query(
+            Anomaly.severity,
+            func.count(Anomaly.id).label('count')
+        )
+        
+        if dataset_id:
+            severity_stats = severity_stats.filter(Anomaly.dataset_id == dataset_id)
+            
+        severity_stats = severity_stats.group_by(Anomaly.severity).all()
+        
+        # Anomalies by status
+        status_stats = db.query(
+            Anomaly.status,
+            func.count(Anomaly.id).label('count')
+        )
+        
+        if dataset_id:
+            status_stats = status_stats.filter(Anomaly.dataset_id == dataset_id)
+            
+        status_stats = status_stats.group_by(Anomaly.status).all()
+
+        return {
+            "total_anomalies": total_anomalies,
+            "by_type": {
+                stat.issue_type: {
+                    "count": stat.count,
+                    "avg_severity": round(float(stat.avg_severity), 2)
+                } for stat in type_stats
+            },
+            "by_severity": {
+                f"severity_{stat.severity}": stat.count for stat in severity_stats
+            },
+            "by_status": {
+                stat.status: stat.count for stat in status_stats
+            }
+        }
+
+    except Exception as e:
+        logger.error("Failed to get anomaly stats", error=str(e))
+        raise HTTPException(status_code=500, detail="Failed to get anomaly stats")
+
+
+@router.get("/types", response_model=List[str])
+async def get_anomaly_types(db: Session = Depends(get_db)):
+    """Get list of all available anomaly types."""
+    try:
+        types = db.query(Anomaly.issue_type).distinct().all()
+        return [t[0] for t in types if t[0]]
+
+    except Exception as e:
+        logger.error("Failed to get anomaly types", error=str(e))
+        raise HTTPException(status_code=500, detail="Failed to get anomaly types")
+
+
+@router.post("/bulk/resolve")
+async def resolve_multiple_anomalies(
+    anomaly_ids: List[int], db: Session = Depends(get_db)
+):
+    """Mark multiple anomalies as resolved."""
+    try:
+        resolved_count = 0
+        
+        for anomaly_id in anomaly_ids:
+            db_anomaly = db.query(Anomaly).filter(Anomaly.id == anomaly_id).first()
+            if db_anomaly:
+                db_anomaly.status = "resolved"
+                resolved_count += 1
+
+        db.commit()
+
+        logger.info("Multiple anomalies resolved", count=resolved_count)
+        return {
+            "message": f"Successfully resolved {resolved_count} anomalies",
+            "resolved_count": resolved_count,
+            "requested_count": len(anomaly_ids)
+        }
+
+    except Exception as e:
+        logger.error("Failed to resolve multiple anomalies", error=str(e))
+        db.rollback()
+        raise HTTPException(status_code=500, detail="Failed to resolve multiple anomalies")
