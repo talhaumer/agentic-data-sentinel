@@ -1,175 +1,282 @@
 #!/usr/bin/env python3
-"""Simple runner for Data Sentinel v1 without Docker/Celery/Redis."""
+"""Complete Data Sentinel runner with setup and testing."""
 
 import os
 import sys
 import subprocess
 import time
+import threading
+import webbrowser
 from pathlib import Path
 
+def print_banner():
+    """Print the Data Sentinel banner."""
+    print("🛡️" + "=" * 58 + "🛡️")
+    print("🛡️" + " " * 20 + "DATA SENTINEL" + " " * 20 + "🛡️")
+    print("🛡️" + " " * 15 + "AI-Powered Data Quality" + " " * 15 + "🛡️")
+    print("🛡️" + "=" * 58 + "🛡️")
+    print()
 
-def check_requirements():
-    """Check if required packages are installed."""
-    try:
-        import fastapi
-        import streamlit
-        import sqlalchemy
-        import duckdb
-        import openai
-
-        print("✅ All required packages are installed")
-        return True
-    except ImportError as e:
-        print(f"❌ Missing package: {e}")
-        print("Please install requirements: pip install -r requirements.txt")
+def check_python_version():
+    """Check Python version compatibility."""
+    if sys.version_info < (3, 8):
+        print("❌ Python 3.8 or higher is required")
+        print(f"   Current version: {sys.version}")
         return False
+    print(f"✅ Python {sys.version_info.major}.{sys.version_info.minor} detected")
+    return True
 
+def check_dependencies():
+    """Check if required dependencies are installed."""
+    print("🔍 Checking dependencies...")
+    
+    required_packages = [
+        'fastapi', 'uvicorn', 'streamlit', 'pandas', 'numpy', 
+        'sqlalchemy', 'pydantic', 'requests'
+    ]
+    
+    missing_packages = []
+    for package in required_packages:
+        try:
+            __import__(package)
+        except ImportError:
+            missing_packages.append(package)
+    
+    if missing_packages:
+        print(f"❌ Missing packages: {', '.join(missing_packages)}")
+        print("   Installing dependencies...")
+        
+        # Install server dependencies
+        try:
+            subprocess.run([sys.executable, "-m", "pip", "install", "-r", "server/requirements.txt"], 
+                         check=True, capture_output=True)
+            print("✅ Server dependencies installed")
+        except subprocess.CalledProcessError as e:
+            print(f"❌ Failed to install server dependencies: {e}")
+            return False
+        
+        # Install client dependencies
+        try:
+            subprocess.run([sys.executable, "-m", "pip", "install", "-r", "client/requirements.txt"], 
+                         check=True, capture_output=True)
+            print("✅ Client dependencies installed")
+        except subprocess.CalledProcessError as e:
+            print(f"❌ Failed to install client dependencies: {e}")
+            return False
+    else:
+        print("✅ All dependencies are installed")
+    
+    return True
 
 def setup_environment():
-    """Set up environment variables."""
-    env_file = Path(".env")
-    if not env_file.exists():
-        print("📝 Creating .env file from template...")
-        if Path("env.example").exists():
-            with open("env.example", "r") as f:
-                content = f.read()
-            with open(".env", "w") as f:
-                f.write(content)
-            print(
-                "⚠️  Please edit .env file with your configuration (especially LLM_API_KEY)"
-            )
-            print("   Choose between OpenAI or Groq (Groq is faster & cheaper)")
-            return False
-        else:
-            print("❌ No env.example file found. Please create .env file manually.")
-            return False
-    return True
-
-
-def create_directories():
-    """Create necessary directories."""
-    directories = ["data", "logs"]
-    for directory in directories:
-        Path(directory).mkdir(exist_ok=True)
-    print("📁 Created necessary directories")
-
-
-def generate_sample_data():
-    """Generate sample data if it doesn't exist."""
-    data_file = Path("data/dw.db")
-    if not data_file.exists():
-        print("📊 Generating sample data...")
+    """Setup environment files."""
+    print("⚙️ Setting up environment...")
+    
+    env_file = Path("server/.env")
+    env_example = Path("server/env.example")
+    
+    if not env_file.exists() and env_example.exists():
         try:
-            subprocess.run(
-                [sys.executable, "scripts/generate_sample_data.py"], check=True
-            )
-            print("✅ Sample data generated")
-        except subprocess.CalledProcessError:
-            print("❌ Failed to generate sample data")
-            raise
+            with open(env_example, 'r') as f:
+                content = f.read()
+            with open(env_file, 'w') as f:
+                f.write(content)
+            print("✅ Environment file created from template")
+            print("⚠️  Please edit server/.env and add your API keys if needed")
+        except Exception as e:
+            print(f"⚠️  Could not create .env file: {e}")
+    else:
+        print("✅ Environment file already exists")
+
+def create_sample_data():
+    """Create sample data if it doesn't exist."""
+    data_dir = Path("data")
+    if not data_dir.exists():
+        print("📊 Creating sample data...")
+        try:
+            subprocess.run([sys.executable, "create_sample_data.py"], 
+                         check=True, capture_output=True)
+            print("✅ Sample data created")
+        except subprocess.CalledProcessError as e:
+            print(f"⚠️  Could not create sample data: {e}")
     else:
         print("✅ Sample data already exists")
-    return True
 
+def run_tests():
+    """Run basic tests."""
+    print("🧪 Running basic tests...")
+    try:
+        # Test server imports by running from server directory
+        server_dir = os.path.abspath("server")
+        result = subprocess.run([
+            sys.executable, "-c", 
+            "from main import app; print('Server imports work')"
+        ], cwd=server_dir, capture_output=True, text=True)
+        
+        if result.returncode == 0:
+            print("✅ Server imports work")
+        else:
+            print("⚠️  Server import test failed, but continuing...")
+            if result.stderr:
+                print(f"   Error: {result.stderr.strip()}")
+            if result.stdout:
+                print(f"   Output: {result.stdout.strip()}")
+        
+        # Test client imports by running from client directory
+        client_dir = os.path.abspath("client")
+        result = subprocess.run([
+            sys.executable, "-c", 
+            "import app; print('Client imports work')"
+        ], cwd=client_dir, capture_output=True, text=True)
+        
+        if result.returncode == 0:
+            print("✅ Client imports work")
+        else:
+            print("⚠️  Client import test failed, but continuing...")
+            if result.stderr:
+                print(f"   Error: {result.stderr.strip()}")
+            if result.stdout:
+                print(f"   Output: {result.stdout.strip()}")
+        
+        print("✅ Basic tests completed")
+        return True
+        
+    except Exception as e:
+        print(f"⚠️  Could not run tests: {e}")
+        return True  # Continue anyway
 
-def start_api():
+def start_server():
     """Start the FastAPI server."""
-    print("🚀 Starting FastAPI server...")
+    print("🚀 Starting Data Sentinel Server...")
     try:
-        subprocess.Popen(
-            [
-                sys.executable,
-                "-m",
-                "uvicorn",
-                "app.main:app",
-                "--host",
-                "0.0.0.0",
-                "--port",
-                "8000",
-                "--reload",
-            ]
-        )
-        print("✅ FastAPI server started at http://localhost:8000")
-        return True
+        # Get absolute path to server directory
+        server_dir = os.path.abspath("server")
+        
+        # Start server from server directory
+        process = subprocess.Popen([
+            sys.executable, "-m", "uvicorn", 
+            "main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"
+        ], cwd=server_dir)
+        
+        # Wait for server to start
+        print("⏳ Waiting for server to start...")
+        time.sleep(5)
+        
+        # Check if server is running
+        try:
+            import requests
+            response = requests.get("http://localhost:8000/api/v1/health", timeout=5)
+            if response.status_code == 200:
+                print("✅ Server started successfully")
+                return process
+            else:
+                print("❌ Server health check failed")
+                return None
+        except Exception as e:
+            print(f"⚠️  Server may not be ready yet: {e}")
+            return process
+            
     except Exception as e:
-        print(f"❌ Failed to start FastAPI: {e}")
-        return False
+        print(f"❌ Failed to start server: {e}")
+        return None
 
-
-def start_dashboard():
-    """Start the Streamlit dashboard."""
-    print("📊 Starting Streamlit dashboard...")
+def start_client():
+    """Start the Streamlit client."""
+    print("🖥️ Starting Data Sentinel Client...")
     try:
-        subprocess.Popen(
-            [
-                sys.executable,
-                "-m",
-                "streamlit",
-                "run",
-                "app/frontend/streamlit_main.py",
-                "--server.port",
-                "8501",
-                "--server.address",
-                "0.0.0.0",
-            ]
-        )
-        print("✅ Streamlit dashboard started at http://localhost:8501")
-        return True
+        # Get absolute path to client directory
+        client_dir = os.path.abspath("client")
+        
+        # Start client from client directory
+        process = subprocess.Popen([
+            sys.executable, "-m", "streamlit", 
+            "run", "app.py", "--server.port", "8501", "--server.address", "0.0.0.0"
+        ], cwd=client_dir)
+        
+        print("✅ Client started successfully")
+        return process
+        
     except Exception as e:
-        print(f"❌ Failed to start Streamlit: {e}")
-        return False
-
+        print(f"❌ Failed to start client: {e}")
+        return None
 
 def main():
-    """Main function to start Data Sentinel v1."""
-    print("🛡️  Data Sentinel v1 - Simple Setup")
-    print("=" * 50)
-
-    # Check requirements
-    if not check_requirements():
+    """Main function."""
+    print_banner()
+    
+    # Check Python version
+    if not check_python_version():
         sys.exit(1)
-
+    
+    # Check and install dependencies
+    if not check_dependencies():
+        sys.exit(1)
+    
     # Setup environment
-    if not setup_environment():
+    setup_environment()
+    
+    # Create sample data
+    create_sample_data()
+    
+    # Run tests
+    run_tests()
+    
+    print("\n🚀 Starting Data Sentinel services...")
+    print("📡 Server: http://localhost:8000")
+    print("🖥️ Client: http://localhost:8501")
+    print("📚 API Docs: http://localhost:8000/docs")
+    print("\nPress Ctrl+C to stop all services")
+    print("=" * 60)
+    
+    # Start server
+    server_process = start_server()
+    if not server_process:
+        print("❌ Failed to start server")
         sys.exit(1)
-
-    # Create directories
-    create_directories()
-
-    # Generate sample data
-    if not generate_sample_data():
+    
+    # Start client
+    client_process = start_client()
+    if not client_process:
+        print("❌ Failed to start client")
+        server_process.terminate()
         sys.exit(1)
-
-    # Start services
-    print("\n🚀 Starting services...")
-
-    if not start_api():
-        sys.exit(1)
-
-    # Wait a moment for API to start
-    time.sleep(2)
-
-    if not start_dashboard():
-        sys.exit(1)
-
-    print("\n🎉 Data Sentinel v1 is running!")
-    print("=" * 50)
-    print("📱 Access points:")
-    print("   API:          http://localhost:8000")
-    print("   Dashboard:    http://localhost:8501")
-    print("   API Docs:     http://localhost:8000/docs")
-    print("   Health Check: http://localhost:8000/health")
-    print("\n🔧 To stop: Press Ctrl+C")
-    print("=" * 50)
-
+    
+    # Open browser
     try:
-        # Keep the script running
+        time.sleep(2)
+        webbrowser.open("http://localhost:8501")
+    except Exception:
+        pass  # Browser opening is optional
+    
+    try:
+        # Wait for processes
         while True:
             time.sleep(1)
+            
+            # Check if processes are still running
+            if server_process.poll() is not None:
+                print("❌ Server process died")
+                break
+            if client_process.poll() is not None:
+                print("❌ Client process died")
+                break
+                
     except KeyboardInterrupt:
-        print("\n👋 Shutting down Data Sentinel...")
-        sys.exit(0)
-
+        print("\n🛑 Shutting down Data Sentinel...")
+        
+        # Terminate processes
+        if server_process:
+            server_process.terminate()
+        if client_process:
+            client_process.terminate()
+        
+        # Wait for processes to terminate
+        if server_process:
+            server_process.wait()
+        if client_process:
+            client_process.wait()
+        
+        print("👋 Goodbye!")
 
 if __name__ == "__main__":
     main()

@@ -46,21 +46,13 @@ venv.bak/
 ehthumbs.db
 Thumbs.db
 
-# Project specific
-data/*.db
-data/*.parquet
-logs/
-*.log
-
-# Environment files
-.env
-.env.local
-.env.production
-
-# Database
+# Data Sentinel specific
 *.db
 *.sqlite
 *.sqlite3
+logs/
+data/*.parquet
+data/*.db
 
 # Jupyter Notebook
 .ipynb_checkpoints

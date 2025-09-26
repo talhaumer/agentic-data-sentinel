@@ -1,83 +1,86 @@
-# Data Sentinel - Agentic AI Data Quality Platform
-# Updated with LangGraph agents, external integrations, and observability
+# Data Sentinel - Multi-Agent Data Quality Monitoring System
+# Multi-stage Docker build for production deployment
 
-FROM python:3.11-slim
+# Stage 1: Base Python environment
+FROM python:3.11-slim as base
 
-# Set working directory
-WORKDIR /app
-
-# Environment variables
-ENV PYTHONPATH=/app
-ENV PYTHONUNBUFFERED=1
-ENV DATABASE_URL=sqlite:///./data/sentinel.db
-ENV DW_CONN_STRING=sqlite:///./data/dw.db
-ENV STREAMLIT_PORT=8501
-ENV STREAMLIT_SERVER_PORT=8501
-ENV STREAMLIT_SERVER_ADDRESS=0.0.0.0
+# Set environment variables
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
     gcc \
     g++ \
+    libpq-dev \
+    sqlite3 \
     curl \
-    graphviz \
     && rm -rf /var/lib/apt/lists/*
 
-# Copy requirements first for better caching
-COPY requirements.txt .
+# Create app directory
+WORKDIR /app
 
-# Install Python dependencies
-RUN pip install --no-cache-dir -r requirements.txt
+# Stage 2: Dependencies
+FROM base as dependencies
 
-# Copy application code
+# Copy requirements files
+COPY server/requirements.txt ./server/
+COPY client/requirements.txt ./client/
+
+# Install server dependencies
+RUN pip install --no-cache-dir -r server/requirements.txt
+
+# Install client dependencies
+RUN pip install --no-cache-dir -r client/requirements.txt
+
+# Stage 3: Development
+FROM dependencies as development
+
+# Install development dependencies
+RUN pip install --no-cache-dir \
+    pytest \
+    pytest-asyncio \
+    black \
+    flake8 \
+    mypy
+
+# Copy source code
+COPY . .
+
+# Create data directory
+RUN mkdir -p /app/data
+
+# Expose ports
+EXPOSE 8000 8501
+
+# Development command
+CMD ["bash", "-c", "cd server && python -m uvicorn main:app --host 0.0.0.0 --port 8000 --reload & cd client && streamlit run app.py --server.port 8501 --server.address 0.0.0.0"]
+
+# Stage 4: Production
+FROM dependencies as production
+
+# Create non-root user
+RUN groupadd -r sentinel && useradd -r -g sentinel sentinel
+
+# Copy source code
 COPY . .
 
 # Create necessary directories
-RUN mkdir -p data logs
+RUN mkdir -p /app/data /app/logs && \
+    chown -R sentinel:sentinel /app
 
-# Generate sample data
-RUN python scripts/generate_sample_data.py
+# Switch to non-root user
+USER sentinel
 
 # Expose ports
 EXPOSE 8000 8501
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=30s --start-period=5s --retries=3 \
-    CMD curl -f http://localhost:8000/health || exit 1
+    CMD curl -f http://localhost:8000/api/v1/health || exit 1
 
-# Create startup script
-RUN echo '#!/bin/bash\n\
-echo "🛡️ Data Sentinel v1 - Docker Container"\n\
-echo "=================================================="\n\
-echo "✅ All required packages are installed"\n\
-echo "📁 Created necessary directories"\n\
-echo "✅ Sample data generated"\n\
-echo "🚀 Starting services..."\n\
-echo ""\n\
-echo "🚀 Starting FastAPI server on port 8000..."\n\
-python -c "import uvicorn; from app.main import app; uvicorn.run(app, host=\"0.0.0.0\", port=8000)" &\n\
-FASTAPI_PID=$!\n\
-echo "✅ FastAPI server started (PID: $FASTAPI_PID)"\n\
-echo ""\n\
-echo "📊 Starting Streamlit dashboard on port 8501..."\n\
-streamlit run app/frontend/streamlit_main.py --server.port=8501 --server.address=0.0.0.0 &\n\
-STREAMLIT_PID=$!\n\
-echo "✅ Streamlit dashboard started (PID: $STREAMLIT_PID)"\n\
-echo ""\n\
-echo "🎉 Data Sentinel v1 is running!"\n\
-echo "=================================================="\n\
-echo "📱 Access points:"\n\
-echo "   API:          http://localhost:8000"\n\
-echo "   Dashboard:    http://localhost:8501"\n\
-echo "   API Docs:     http://localhost:8000/docs"\n\
-echo "   Health Check: http://localhost:8000/health"\n\
-echo "   LangGraph Viz: http://localhost:8501 → Agent Workflows → LangGraph Visualization"\n\
-echo "=================================================="\n\
-echo "🔧 To stop: Press Ctrl+C"\n\
-echo "=================================================="\n\
-\n\
-# Wait for both processes\n\
-wait $FASTAPI_PID $STREAMLIT_PID' > start.sh && chmod +x start.sh
+# Production command
+CMD ["bash", "-c", "cd server && python -m uvicorn main:app --host 0.0.0.0 --port 8000 --workers 4 & cd client && streamlit run app.py --server.port 8501 --server.address 0.0.0.0 --server.headless true"]
 
-# Default command
-CMD ["./start.sh"]
