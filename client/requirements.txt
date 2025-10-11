@@ -1,6 +1,6 @@
 # Streamlit client
 streamlit==1.28.1
-streamlit-option-menu==0.3.6
+streamlit-option-menu==0.4.0
 
 # HTTP client
 requests==2.31.0
