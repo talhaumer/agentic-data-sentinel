@@ -1,0 +1,71 @@
+# Development and Testing Dependencies
+
+# Testing
+pytest==7.4.3
+pytest-asyncio==0.23.2
+pytest-cov==4.1.0
+pytest-mock==3.12.0
+pytest-xdist==3.5.0
+coverage[toml]==7.3.4
+
+# Code Quality
+black==23.12.1
+isort==5.13.2
+flake8==7.0.0
+flake8-docstrings==1.7.0
+pylint==3.0.3
+mypy==1.8.0
+
+# Type Stubs
+types-requests==2.31.0.20240106
+types-PyYAML==6.0.12.12
+
+# Security
+bandit[toml]==1.7.6
+safety==3.0.1
+pip-audit==2.6.3
+
+# Documentation
+sphinx==7.2.6
+sphinx-rtd-theme==2.0.0
+sphinx-autodoc-typehints==1.25.2
+
+# Pre-commit
+pre-commit==3.6.0
+
+# Development Tools
+ipython==8.19.0
+jupyter==1.0.0
+notebook==7.0.6
+
+# Code Analysis
+radon==6.0.1
+mccabe==0.7.0
+
+# Performance
+memory-profiler==0.61.0
+line-profiler==4.1.1
+
+# Debugging
+ipdb==0.13.13
+pdbpp==0.10.3
+
+# Build Tools
+build==1.0.3
+twine==4.0.2
+wheel==0.42.0
+
+# Git Hooks
+commitizen==3.13.0
+
+# API Testing
+httpx==0.25.2
+requests-mock==1.11.0
+
+# Docker Testing
+docker==7.0.0
+docker-compose==1.29.2
+
+# Monitoring
+prometheus-client==0.19.0
+

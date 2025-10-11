@@ -298,7 +298,7 @@ docker-compose down -v --remove-orphans
 - **9090** - Prometheus (if enabled)
 - **3000** - Grafana (if enabled)
 
-For detailed Docker documentation, see [DOCKER.md](DOCKER.md).
+For detailed Docker usage, see the Docker Deployment section above.
 
 ---
 
@@ -316,7 +316,7 @@ cp server/env.example server/.env
 python create_sample_data.py
 
 # 4. Start services
-python start_data_sentinel.py
+python run.py
 ```
 
 ### 🌐 Access Points
@@ -675,7 +675,7 @@ cp server/env.example server/.env
 pytest tests/
 
 # 7. Start development servers
-python start_data_sentinel.py
+python run.py
 ```
 
 ### Development Commands
@@ -980,30 +980,35 @@ git push origin feature/amazing-feature
 
 ### Additional Documentation
 
-- [📖 API Documentation](http://localhost:8000/docs)
-- [🔧 Configuration Guide](docs/configuration.md)
-- [🐳 Docker Guide](docs/docker.md)
-- [🚀 Deployment Guide](docs/deployment.md)
-- [🧪 Testing Guide](docs/testing.md)
-- [🔒 Security Guide](docs/security.md)
-- [🤝 Contributing Guide](CONTRIBUTING.md)
-- [📋 Changelog](CHANGELOG.md)
+- [📖 API Documentation](http://localhost:8000/docs) - Interactive API docs (when server is running)
+- [🤝 Contributing Guide](CONTRIBUTING.md) - How to contribute to the project
+- [📋 Changelog](CHANGELOG.md) - Version history and changes
+- [🔒 Security Policy](SECURITY.md) - Security guidelines and reporting
 
-### Dataset Documentation
+### Dataset Support
 
-See [DATASETS.md](DATASETS.md) for information about:
-- Supported data formats
-- Dataset configuration options
-- Sample datasets
-- Data quality checks
+**Supported Formats:**
+- CSV files with configurable delimiters
+- Parquet files for efficient storage
+- JSON files and JSON Lines
+- Excel files (.xlsx, .xls)
+- Database connections (SQLite, PostgreSQL)
 
-### LLM Setup Guide
+**Configuration Options:**
+- File path and type specification
+- Custom delimiters and encoding
+- Column selection and filtering
+- Data sampling for large datasets
 
-See [LLM_SETUP.md](LLM_SETUP.md) for:
-- LLM provider configuration
-- API key setup
-- Model selection guide
-- Performance optimization
+### LLM Provider Setup
+
+**Supported Providers:**
+- **OpenAI**: GPT-3.5-turbo, GPT-4 models
+- **Groq**: Fast inference with Llama models (free tier available)
+- **Anthropic**: Claude models
+
+**Configuration:**
+See `server/env.example` or `env.example` for detailed configuration options.
 
 ---
 
@@ -1056,7 +1061,7 @@ export DEBUG=true
 export LOG_LEVEL=debug
 
 # Start with debug logging
-python start_data_sentinel.py
+python run.py
 ```
 
 ---
